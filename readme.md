@@ -7,7 +7,7 @@
 
 LeRoute is a flexible and powerful routing library for handling HTTP requests and responses in JavaScript and TypeScript applications.
 
-LeRoute works greate with [serve-cold](https://www.npmjs.com/package/serve-cold), a library for serving endpoints.
+LeRoute works greate with [LeServe](https://www.npmjs.com/package/leserve), a library for serving endpoints.
 
 ## 🚀 Features
 
