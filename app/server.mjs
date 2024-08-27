@@ -1,6 +1,6 @@
 import { createFSRouter } from "../fs-router.mjs";
 import path from "path";
-import serve from "serve-cold";
+import serve from "leserve";
 import theresWaldo from "theres-waldo";
 const { dir } = theresWaldo(import.meta.url);
 const router = createFSRouter(path.join(dir, "routes"));

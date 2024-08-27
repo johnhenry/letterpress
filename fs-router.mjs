@@ -8,7 +8,10 @@
 import fs from "fs/promises";
 import path from "path";
 import { pathToFileURL } from "url";
+import dynamicRun from "./utility/dynamic-run.mjs";
 const ALL = "all";
+import theresWaldo from "theres-waldo";
+const { dir } = theresWaldo(import.meta.url);
 
 /**
  * @typedef {import('./types').LeRoute} LeRoute
@@ -97,19 +100,42 @@ export function createFSRouter(baseDir) {
     // Look for a matching method file
     let methodFile = path.join(currentPath, `${method}.mjs`);
 
+    let html;
     try {
       // Check if the file exists before attempting to import
       try {
         await fs.access(methodFile);
       } catch {
-        methodFile = path.join(currentPath, `${ALL}.mjs`);
-        await fs.access(methodFile);
+        try {
+          methodFile = path.join(currentPath, `index.html`);
+          await fs.access(methodFile);
+          html = true;
+        } catch {
+          methodFile = path.join(currentPath, `${ALL}.mjs`);
+          await fs.access(methodFile);
+        }
       }
 
       // Convert the file path to a file URL
       const fileUrl = pathToFileURL(methodFile).href;
 
-      const module = await import(fileUrl);
+      let module;
+      if (html) {
+        const file = await fs
+          .readFile(methodFile, { encoding: "utf-8" })
+          .catch((e) => {
+            console.error(e);
+            return "";
+          });
+        const data = `import {createLeRoute} from "${path.join(
+          dir,
+          "./index.mjs"
+        )}";
+        export default createLeRoute()\`${file}\``;
+        module = await dynamicRun(data, dir);
+      } else {
+        module = await import(fileUrl);
+      }
       const handler = module.default;
       if (typeof handler !== "function") {
         throw new Error(`${methodFile} does not export a default function`);

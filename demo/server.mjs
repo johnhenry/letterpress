@@ -1,4 +1,4 @@
-import serve from "serve-cold";
+import serve from "leserve";
 import { createLeRoute, createLeRouter } from "../index.mjs";
 
 // Server with single html route

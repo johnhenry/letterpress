@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>My First Web Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1>${(request)=>request.method}</h1>
+    <h2>${(request)=>request.url}</h2>
+    at ${(request)=>new Date()}
+    <h3>Users:</h3>
+    <ul>
+      <li><a href="./user/123">123</a></li>
+      <li><a href="./user/abc">abc</a></li>
+      <li><a href="./user/bill the user">bill the user</a></li>
+    </ul>
+    <h3><a href="./products">products</a></h3>
+  </body>
+</html>

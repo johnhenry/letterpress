@@ -20,5 +20,8 @@
   "license": "ISC",
   "devDependencies": {
     "leserve": "^0.0.0"
+  },
+  "dependencies": {
+    "theres-waldo": "^0.0.0"
   }
 }

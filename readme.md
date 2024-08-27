@@ -35,7 +35,7 @@ yarn add leroute
 ### Basic Example
 
 ```javascript
-import serve from "serve-cold";
+import serve from "leserve";
 import { createLeRouter, createLeRoute } from "leroute";
 
 // Create a router
