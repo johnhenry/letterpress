@@ -66,7 +66,10 @@ const { dir } = theresWaldo(import.meta.url);
  *   }
  * });
  */
-export function createFSRouter(baseDir) {
+export function createFSRouter(
+  baseDir,
+  defaultHandler = () => new Response("not found", { status: 404 })
+) {
   return async function fsRouter(req) {
     const { pathname } = new URL(req.url, `http://${req.headers.host}`);
     const method = req.method.toLowerCase();
@@ -143,7 +146,7 @@ export function createFSRouter(baseDir) {
       return handler(req, { params });
     } catch (error) {
       if (error.code === "ENOENT" || error.code === "ERR_MODULE_NOT_FOUND") {
-        return null; // No matching method file found
+        return defaultHandler(req, { params });
       }
       throw error; // Re-throw other errors
     }
