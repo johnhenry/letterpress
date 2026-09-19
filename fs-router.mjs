@@ -135,7 +135,14 @@ export function createFSRouter(
           "./index.mjs"
         )}";
         export default createLeRoute()\`${file}\``;
-        module = await dynamicRun(data, dir);
+        // Write the synthesized temp module next to the matched route's
+        // index.html (currentPath), not into leroute's own package
+        // directory (dir). Writing into the package dir means every
+        // index.html request requires the installed package directory
+        // (e.g. node_modules/leroute) to be writable, which commonly isn't
+        // true in production (read-only installs/containers), and has
+        // nothing to do with the route being served.
+        module = await dynamicRun(data, currentPath);
       } else {
         module = await import(fileUrl);
       }
