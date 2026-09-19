@@ -4,8 +4,7 @@
 
 1. [createLeRouter](#createLeRouter)
 2. [createLeRoute](#createLeRoute)
-3. [serve](#serve)
-4. [Utility Functions](#utility-functions)
+3. [Utility Functions](#utility-functions)
 
 ## createLeRouter
 
@@ -97,47 +96,20 @@ Content-Type: application/json
 `;
 ```
 
-## serve
-
-Starts a server with the given handler.
-
-```typescript
-function serve(
-  options: { port: number },
-  handler: LeRoute | LeRouter,
-  serverOptions?: object
-): void;
-```
-
-### Parameters
-
-- `options`: An object with a `port` property specifying the port to listen on
-- `handler`: A `LeRoute` or `LeRouter` to handle incoming requests
-- `serverOptions` (optional): Additional options for the server
-
-### Example
-
-```javascript
-import { serve, createLeRouter } from "leroute";
-
-const router = createLeRouter();
-// Define routes...
-
-serve({ port: 8080 }, router);
-```
-
 ## Utility Functions
 
 LeRoute provides several utility functions to help with request and response handling:
 
-### tagRequest
+> Note: `leroute` does not export a `serve` function or a `tagRequest` function. To run a server, pair `leroute` with [leserve](https://www.npmjs.com/package/leserve) (imported directly, e.g. `import serve from "leserve"`) or any server of your choice. To build a `Request` from a template literal, use `createRequest` (see below).
+
+### createRequest
 
 Creates a new `Request` object from a template literal.
 
 ```javascript
-import { tagRequest } from "leroute";
+import { createRequest } from "leroute";
 
-const request = await tagRequest()`
+const request = await createRequest()`
 GET /api/users HTTP/1.1
 Accept: application/json
 `;
@@ -160,43 +132,43 @@ Content-Type: application/json
 
 ### HTTPExpression
 
-A utility for parsing and manipulating HTTP messages.
+A tagged-template function for matching HTTP requests against a method/path/header pattern. It returns an object with `test(request)` and `exec(request)` methods — not `.method`/`.path`/`.version` properties.
 
 ```javascript
 import { HTTPExpression } from "leroute";
 
-const expr = new HTTPExpression("GET /users/:id HTTP/1.1");
-console.log(expr.method); // 'GET'
-console.log(expr.path); // '/users/:id'
-console.log(expr.version); // 'HTTP/1.1'
+const expr = HTTPExpression`GET /users/:id`;
+
+expr.test(new Request("https://example.com/users/123")); // true
+
+expr.exec(new Request("https://example.com/users/123"));
+// { id: '123', method: 'GET', headers: Headers {} }
 ```
 
 ### deconstruct
 
-A utility function for deconstructing HTTP messages.
+A low-level tagged-template helper that breaks a template literal down into its raw pieces, without evaluating substitutions into a final string. Returns `{ strings, substitutions, raw }`.
 
 ```javascript
 import { deconstruct } from "leroute";
 
-const { method, url, headers, body } = deconstruct`
+const { strings, substitutions, raw } = deconstruct`
 POST /api/users HTTP/1.1
 Content-Type: application/json
 
-{"name": "John Doe", "email": "john@example.com"}
+{"name": "${"John Doe"}"}
 `;
 ```
 
 ### cook
 
-A utility function for processing HTTP messages.
+A low-level tagged-template helper that concatenates a template literal's strings and substitutions back into a single string (the inverse of `deconstruct`).
 
 ```javascript
 import { cook } from "leroute";
 
-const processedMessage = cook`
-GET /api/users/:id HTTP/1.1
-Accept: application/json
-`({ id: 123 });
+const message = cook`GET /api/users/${123} HTTP/1.1`;
+// "GET /api/users/123 HTTP/1.1"
 ```
 
 This API documentation provides an overview of the main functions and utilities provided by the LeRoute library. For more detailed information on specific use cases and advanced features, please refer to the README.md and the source code.

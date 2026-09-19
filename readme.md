@@ -80,7 +80,8 @@ serve({ port: 8080 }, router);
 ### Advanced Usage
 
 ```javascript
-import { createLeRouter, createLeRoute, serve } from "leroute";
+import serve from "leserve";
+import { createLeRouter, createLeRoute } from "leroute";
 
 const router = createLeRouter();
 
@@ -140,9 +141,31 @@ Creates a new route handler.
 - `statusText`: HTTP status text (optional)
 - `streaming`: Enable streaming response (optional)
 
-### `serve(options: { port: number }, handler: LeRoute | LeRouter, serverOptions?: object): void`
+### `HTTPExpression`
 
-Starts a server with the given handler.
+A tagged-template function for matching HTTP requests against a method/path/header pattern.
+
+```javascript
+import { HTTPExpression } from "leroute";
+
+const expr = HTTPExpression`GET /users/:id`;
+expr.test(request); // boolean — does this request match?
+expr.exec(request); // matched params (plus method/headers), or null
+```
+
+### `createRequest`, `createResponse`
+
+Tagged-template functions for building `Request`/`Response` objects from raw HTTP-message-shaped template literals. See [api.md](./api.md) for details.
+
+### `createFSRouter`
+
+Builds a `LeRouter` from a filesystem-based route directory.
+
+### `deconstruct`, `cook`
+
+Lower-level utility functions used to parse and process tagged HTTP template literals. See [api.md](./api.md) for details.
+
+> Note: `leroute` does not export a `serve` function. To actually run a server, pair `leroute` with [leserve](https://www.npmjs.com/package/leserve) (or any server of your choice) as shown in the usage examples above.
 
 ## 📜 Changelog
 
@@ -151,6 +174,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
+
+### [Unreleased]
+
+#### Fixed
+
+- 🐛 `test/index.mjs` imported `lerouter.mjs` twice and never imported `leroute.mjs`, silently dropping the `createLeRoute` test suite from `npm test`
+- 🐛 `test/leroute.mjs` imported `createLeRoute` from `create-lerouter.mjs` (which doesn't export it) instead of `create-leroute.mjs`, which would have thrown once the missing import above was fixed
+- 🐛 `package.json` declared `"license": "ISC"` while the `LICENSE` file and README badge are MIT; changed to `"license": "MIT"` to match
+- 📝 README and API docs referenced `serve` and `tagRequest` as exports of `leroute`; neither is exported — `serve` comes from the separate `leserve` package, and `tagRequest` doesn't exist. Docs corrected to list the real exports
+- 📝 API docs showed `HTTPExpression(...)` as a constructor with `.method`/`.path`/`.version` properties; corrected to show it as a tagged-template function returning `{ test(request), exec(request) }`
+
+#### Added
+
+- `"types"` field in `package.json` pointing to the existing `types.d.ts`
+- A real `description` and `keywords` in `package.json` (previously empty)
+
+#### Removed
+
+- Deleted `utility/cd.mjs`, an unused debug scratch file with no imports and no tests
 
 ### [0.0.0] - 2024-08-26
 
