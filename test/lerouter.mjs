@@ -49,6 +49,68 @@ test("LeRouter - Custom error handler", async () => {
   assert.equal(await response.text(), "Custom Error: Test Error");
 });
 
+test("LeRouter - Custom error handler catches rejections from async handlers", async () => {
+  // Regression test: an earlier version did `return handler(...)` inside the
+  // try block instead of `return await handler(...)`. Since calling an async
+  // function always returns a promise (even when it throws synchronously),
+  // that throw never surfaced inside the try/catch, so the rejection escaped
+  // past errorHandler entirely instead of producing a 500 response.
+  const router = createLeRouter({
+    errorHandler: (error, request) =>
+      new Response(`Custom Error: ${error.message}`, { status: 500 }),
+  });
+  router.endpoint`GET /async-error`(async () => {
+    throw new Error("Async Test Error");
+  });
+
+  const request = new Request("http://example.com/async-error");
+  const response = await router(request);
+  assert.equal(response.status, 500);
+  assert.equal(await response.text(), "Custom Error: Async Test Error");
+});
+
+test("LeRouter - does not leak request headers into the response", async () => {
+  // Regression test: the handler wrapper created by `router.endpoint` used
+  // to pass the per-request context object (which includes `headers` set to
+  // the *request's* Headers, so substitution functions can read them) into
+  // createLeRoute() as its LeRouteInit. createLeRoute seeds the response
+  // Headers from `init.headers`, so every request header (Cookie,
+  // Authorization, arbitrary custom headers) was being echoed back as a
+  // response header.
+  const router = createLeRouter();
+  router.endpoint`GET /secure``Hello, World!`;
+
+  const request = new Request("http://example.com/secure", {
+    headers: {
+      Authorization: "Bearer topsecret",
+      Cookie: "sessionid=abc123",
+      "X-Secret-Session": "super-secret-token",
+    },
+  });
+  const response = await router(request);
+  assert.equal(response.headers.has("authorization"), false);
+  assert.equal(response.headers.has("cookie"), false);
+  assert.equal(response.headers.has("x-secret-session"), false);
+  assert.equal(await response.text(), "Hello, World!");
+});
+
+test("LeRouter - substitution functions can still read request context after the header fix", async () => {
+  // Companion to the header-leak regression test above: fixing that bug must
+  // not remove handlers' ability to read params/method/headers via context.
+  const router = createLeRouter();
+  router.endpoint`GET /user/:id``ID:${(_, { params }) =>
+    params.id} Method:${(_, { method }) => method} Accept:${(
+    _,
+    { headers }
+  ) => headers.get("Accept")}`;
+
+  const request = new Request("http://example.com/user/42", {
+    headers: { Accept: "text/plain" },
+  });
+  const response = await router(request);
+  assert.equal(await response.text(), "ID:42 Method:GET Accept:text/plain");
+});
+
 test("LeRouter - Multiple routes", async () => {
   const router = createLeRouter();
   router.endpoint`GET /``Home`;

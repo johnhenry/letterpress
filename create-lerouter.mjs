@@ -16,10 +16,14 @@ export const createLeRouter = (initial = {}) => {
       for (const [matcher, handler] of routes) {
         const match = matcher(request);
         if (match) {
-          return handler(request, { ...init, ...match });
+          // Awaiting here (rather than returning the handler's promise
+          // directly) is required so that a handler that throws inside an
+          // async function (i.e. rejects its returned promise) is still
+          // caught below and routed to errorHandler.
+          return await handler(request, { ...init, ...match });
         }
       }
-      return defaultHandler(request);
+      return await defaultHandler(request);
     } catch (error) {
       return errorHandler(error, request);
     }
@@ -39,8 +43,16 @@ export const createLeRouter = (initial = {}) => {
       const handler =
         typeof values === "function"
           ? values
-          : (request, init) =>
-              createLeRoute(init)(values, ...substitutions)(request, init);
+          : // `context` here is the per-request object the router dispatch
+            // builds as `{ ...init, ...match }`, i.e. it includes `headers`
+            // set to the *request's* Headers (see matcher above) so that
+            // substitution functions can read `context.headers`. It must
+            // NOT be used as the LeRouteInit passed to createLeRoute, or
+            // the request's headers (Cookie, Authorization, etc.) would be
+            // used to seed - and thus leak into - the response headers.
+            // createLeRoute is given only the router-level `init` instead.
+            (request, context) =>
+              createLeRoute(init)(values, ...substitutions)(request, context);
       routes.push([matcher, handler]);
       return router;
     };
