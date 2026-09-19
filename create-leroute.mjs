@@ -87,7 +87,24 @@ export const createLeRoute = (initOrMiddleware) => {
             const sub = substitutions[j];
             if (typeof sub === "function") {
               const result = await sub(request, context);
-              if (result !== undefined) {
+              if (
+                result instanceof ReadableStream ||
+                result instanceof Blob ||
+                result instanceof ArrayBuffer ||
+                result instanceof Uint8Array
+              ) {
+                // A substitution function can return a stream/binary value
+                // just like a directly-substituted one; it must get the
+                // same raw-passthrough treatment rather than being coerced
+                // via .toString() (which would produce "[object ...]").
+                if (!headers.has("Content-Type")) {
+                  headers.set(
+                    "Content-Type",
+                    result.type ?? "application/octet-stream" // Blob may have a type
+                  );
+                }
+                return result;
+              } else if (result !== undefined && result !== null) {
                 processChunk(result.toString());
               }
             } else if (
@@ -107,7 +124,7 @@ export const createLeRoute = (initOrMiddleware) => {
               for (const [key, value] of sub) {
                 headers.set(key, value);
               }
-            } else {
+            } else if (sub !== undefined && sub !== null) {
               processChunk(sub.toString());
             }
             j++;

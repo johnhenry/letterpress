@@ -45,6 +45,48 @@ describe("createLeRoute", () => {
     assert.strictEqual(response.statusText, "Not Found");
   });
 
+  it("should treat a null/undefined substitution as empty rather than throwing", async () => {
+    // Regression test: `sub.toString()` was called unconditionally on
+    // directly-substituted values, so `${null}` or `${undefined}` in a
+    // template threw "Cannot read properties of null/undefined (reading
+    // 'toString')" instead of behaving like ordinary JS template literals.
+    const nullRoute = createLeRoute()`Before ${null} After`;
+    const nullResponse = await nullRoute(new Request("https://example.com"));
+    assert.strictEqual(await nullResponse.text(), "Before  After");
+
+    const undefinedRoute = createLeRoute()`Before ${undefined} After`;
+    const undefinedResponse = await undefinedRoute(
+      new Request("https://example.com")
+    );
+    assert.strictEqual(await undefinedResponse.text(), "Before  After");
+  });
+
+  it("should treat a substitution function returning null the same as returning undefined", async () => {
+    // Regression test: a function substitution's `undefined` result is
+    // explicitly skipped, but a `null` result hit the same `.toString()`
+    // call and threw.
+    const route = createLeRoute()`Before ${() => null} After`;
+    const response = await route(new Request("https://example.com"));
+    assert.strictEqual(await response.text(), "Before  After");
+  });
+
+  it("should pass through a stream/binary value returned by a substitution function", async () => {
+    // Regression test: a directly-substituted ReadableStream/Blob/
+    // ArrayBuffer/Uint8Array is returned as the raw response body, but a
+    // substitution *function* that returned one of those values was
+    // coerced with `.toString()`, producing the literal text
+    // "[object ReadableStream]" instead of the stream's actual content.
+    const route = createLeRoute()`${() =>
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("STREAMED"));
+          controller.close();
+        },
+      })}`;
+    const response = await route(new Request("https://example.com"));
+    assert.strictEqual(await response.text(), "STREAMED");
+  });
+
   it("should handle streaming responses", async () => {
     const route = createLeRoute({ streaming: true })`
       ${async (_, { response }) => {
