@@ -1,8 +1,9 @@
 {
   "name": "leroute",
   "version": "0.0.1",
-  "description": "",
+  "description": "A tagged-template-string HTTP routing library for defining and matching request handlers with plain JavaScript syntax.",
   "main": "index.mjs",
+  "types": "types.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/johnhenry/leroute"
@@ -15,9 +16,17 @@
     "demo:server": "node demo/server.mjs",
     "demo:client": "node demo/client.mjs"
   },
-  "keywords": [],
+  "keywords": [
+    "router",
+    "routing",
+    "http",
+    "tagged-template",
+    "template-literal",
+    "request",
+    "response"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "leserve": "^0.0.0"
   },
