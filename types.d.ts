@@ -1,42 +1,42 @@
 // Represents a route handler function
-export type LeRoute = (
+export type Route = (
   request: Request,
   context?: Record<string, any>
 ) => Response | Promise<Response>;
 
-// Extension for the LeRouter to add endpoints
-export type LeRouterExtension = {
+// Extension for the Router to add endpoints
+export type RouterExtension = {
   endpoint: (
     template: TemplateStringsArray,
     ...substitutions: any[]
-  ) => LeRouter;
+  ) => Router;
 };
 
-// Combines LeRoute and LeRouterExtension
-export type LeRouter = LeRoute & LeRouterExtension;
+// Combines Route and RouterExtension
+export type Router = Route & RouterExtension;
 
-// Configuration options for a LeRoute
-export type LeRouteInit = {
+// Configuration options for a Route
+export type RouteInit = {
   headers?: HeadersInit | Headers;
   status?: number;
   statusText?: string;
   streaming?: boolean;
 };
 
-// Middleware for LeRoute
-export type LeRouteMiddleware =
-  | LeRouteInit
-  | ((request: Request) => LeRouteInit);
+// Middleware for Route
+export type RouteMiddleware =
+  | RouteInit
+  | ((request: Request) => RouteInit);
 
-// Function to create a LeRoute
-export type CreateLeRoute = (
-  init?: LeRouteMiddleware
-) => (template: TemplateStringsArray, ...substitutions: any[]) => LeRoute;
+// Function to create a Route
+export type CreateRoute = (
+  init?: RouteMiddleware
+) => (template: TemplateStringsArray, ...substitutions: any[]) => Route;
 
-// Configuration options for a LeRouter
-export type LeRouterInit = {
+// Configuration options for a Router
+export type RouterInit = {
   baseUrl?: string;
-  defaultHandler?: LeRoute;
+  defaultHandler?: Route;
   errorHandler?: (
     error: Error,
     request: Request
@@ -44,13 +44,13 @@ export type LeRouterInit = {
   cache?: CacheOptions;
 };
 
-// Middleware for LeRouter
-export type LeRouterMiddleware =
-  | LeRouterInit
-  | ((request: Request) => LeRouterInit);
+// Middleware for Router
+export type RouterMiddleware =
+  | RouterInit
+  | ((request: Request) => RouterInit);
 
-// Function to create a LeRouter
-export type CreateLeRouter = (init?: LeRouterMiddleware) => LeRouter;
+// Function to create a Router
+export type CreateRouter = (init?: RouterMiddleware) => Router;
 
 // Cache options
 export type CacheOptions = {

@@ -1,11 +1,11 @@
-import { createLeRoute } from "../create-leroute.mjs";
+import { createRoute } from "../create-route.mjs";
 
 import { describe, it } from "node:test";
 import assert from "node:assert";
 
-describe("createLeRoute", () => {
+describe("createRoute", () => {
   it("should create a basic route", async () => {
-    const route = createLeRoute()`Hello, World!`;
+    const route = createRoute()`Hello, World!`;
     const response = await route(new Request("https://example.com"));
     assert.strictEqual(await response.text(), "Hello, World!");
     assert.strictEqual(response.status, 200);
@@ -13,13 +13,13 @@ describe("createLeRoute", () => {
   });
 
   it("should handle function substitutions", async () => {
-    const route = createLeRoute()`The number is: ${() => 42}`;
+    const route = createRoute()`The number is: ${() => 42}`;
     const response = await route(new Request("https://example.com"));
     assert.strictEqual(await response.text(), "The number is: 42");
   });
 
   it("should handle async function substitutions", async () => {
-    const route = createLeRoute()`The result is: ${async () => {
+    const route = createRoute()`The result is: ${async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       return "async";
     }}`;
@@ -28,7 +28,7 @@ describe("createLeRoute", () => {
   });
 
   it("should allow setting custom headers", async () => {
-    const route = createLeRoute({
+    const route = createRoute({
       headers: { "X-Custom-Header": "Test" },
     })`Custom header test`;
     const response = await route(new Request("https://example.com"));
@@ -36,7 +36,7 @@ describe("createLeRoute", () => {
   });
 
   it("should allow setting custom status", async () => {
-    const route = createLeRoute({
+    const route = createRoute({
       status: 404,
       statusText: "Not Found",
     })`404 Not Found`;
@@ -50,11 +50,11 @@ describe("createLeRoute", () => {
     // directly-substituted values, so `${null}` or `${undefined}` in a
     // template threw "Cannot read properties of null/undefined (reading
     // 'toString')" instead of behaving like ordinary JS template literals.
-    const nullRoute = createLeRoute()`Before ${null} After`;
+    const nullRoute = createRoute()`Before ${null} After`;
     const nullResponse = await nullRoute(new Request("https://example.com"));
     assert.strictEqual(await nullResponse.text(), "Before  After");
 
-    const undefinedRoute = createLeRoute()`Before ${undefined} After`;
+    const undefinedRoute = createRoute()`Before ${undefined} After`;
     const undefinedResponse = await undefinedRoute(
       new Request("https://example.com")
     );
@@ -65,7 +65,7 @@ describe("createLeRoute", () => {
     // Regression test: a function substitution's `undefined` result is
     // explicitly skipped, but a `null` result hit the same `.toString()`
     // call and threw.
-    const route = createLeRoute()`Before ${() => null} After`;
+    const route = createRoute()`Before ${() => null} After`;
     const response = await route(new Request("https://example.com"));
     assert.strictEqual(await response.text(), "Before  After");
   });
@@ -76,7 +76,7 @@ describe("createLeRoute", () => {
     // substitution *function* that returned one of those values was
     // coerced with `.toString()`, producing the literal text
     // "[object ReadableStream]" instead of the stream's actual content.
-    const route = createLeRoute()`${() =>
+    const route = createRoute()`${() =>
       new ReadableStream({
         start(controller) {
           controller.enqueue(new TextEncoder().encode("STREAMED"));
@@ -88,7 +88,7 @@ describe("createLeRoute", () => {
   });
 
   it("should handle streaming responses", async () => {
-    const route = createLeRoute({ streaming: true })`
+    const route = createRoute({ streaming: true })`
       ${async (_, { response }) => {
         response.headers.set("X-Streaming", "True");
         await new Promise((resolve) => setTimeout(resolve, 10));

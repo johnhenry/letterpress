@@ -143,10 +143,10 @@ Content-Type: text/html
 <!DOCTYPE html>
 <html>
   <head>
-    <title>LeRoute Demo</title>
+    <title>Letterpress Demo</title>
   </head>
   <body>
-    <h1>Welcome to LeRoute!</h1>
+    <h1>Welcome to Letterpress!</h1>
     <p>The current time is: </p>
     <p>Your user agent is: </p>
   </body>

@@ -48,7 +48,7 @@ test("dynamicRun - surfaces the original error when writing the temp file fails,
 });
 
 test("dynamicRun - a cleanup (unlink) failure after a successful import does not discard the imported module", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "leroute-dynrun-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "letterpress-dynrun-"));
   const originalUnlink = fs.unlink;
   fs.unlink = async () => {
     const error = new Error("simulated cleanup failure");

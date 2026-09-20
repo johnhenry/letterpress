@@ -1,17 +1,17 @@
-# LeRoute API Documentation
+# Route API Documentation
 
 ## Table of Contents
 
-1. [createLeRouter](#createLeRouter)
-2. [createLeRoute](#createLeRoute)
+1. [createRouter](#createRouter)
+2. [createRoute](#createRoute)
 3. [Utility Functions](#utility-functions)
 
-## createLeRouter
+## createRouter
 
 Creates a new router instance.
 
 ```typescript
-function createLeRouter(init?: LeRouterInit): LeRouter;
+function createRouter(init?: RouterInit): Router;
 ```
 
 ### Parameters
@@ -19,9 +19,9 @@ function createLeRouter(init?: LeRouterInit): LeRouter;
 - `init` (optional): Configuration options for the router
 
   ```typescript
-  type LeRouterInit = {
+  type RouterInit = {
     baseUrl?: string;
-    defaultHandler?: LeRoute;
+    defaultHandler?: Route;
     errorHandler?: (
       error: Error,
       request: Request
@@ -32,14 +32,14 @@ function createLeRouter(init?: LeRouterInit): LeRouter;
 
 ### Returns
 
-Returns a `LeRouter` instance, which is a function that can be used as a request handler and also has an `endpoint` method for defining routes.
+Returns a `Router` instance, which is a function that can be used as a request handler and also has an `endpoint` method for defining routes.
 
 ### Example
 
 ```javascript
-import { createLeRouter } from "leroute";
+import { createRouter } from "@johnhenry/letterpress";
 
-const router = createLeRouter({
+const router = createRouter({
   baseUrl: "https://api.example.com",
   errorHandler: (error, request) => {
     console.error("Error:", error);
@@ -52,14 +52,14 @@ router.endpoint`GET /users/:id`(async (request, { params }) => {
 });
 ```
 
-## createLeRoute
+## createRoute
 
 Creates a new route handler.
 
 ```typescript
-function createLeRoute(
-  init?: LeRouteInit
-): (template: TemplateStringsArray, ...substitutions: any[]) => LeRoute;
+function createRoute(
+  init?: RouteInit
+): (template: TemplateStringsArray, ...substitutions: any[]) => Route;
 ```
 
 ### Parameters
@@ -67,7 +67,7 @@ function createLeRoute(
 - `init` (optional): Configuration options for the route
 
   ```typescript
-  type LeRouteInit = {
+  type RouteInit = {
     headers?: HeadersInit | Headers;
     status?: number;
     statusText?: string;
@@ -77,14 +77,14 @@ function createLeRoute(
 
 ### Returns
 
-Returns a function that takes a template literal and returns a `LeRoute` (a request handler function).
+Returns a function that takes a template literal and returns a `Route` (a request handler function).
 
 ### Example
 
 ```javascript
-import { createLeRoute } from "leroute";
+import { createRoute } from "@johnhenry/letterpress";
 
-const userRoute = createLeRoute({ streaming: true })`
+const userRoute = createRoute({ streaming: true })`
 HTTP/1.1 200 OK
 Content-Type: application/json
 
@@ -98,16 +98,16 @@ Content-Type: application/json
 
 ## Utility Functions
 
-LeRoute provides several utility functions to help with request and response handling:
+Route provides several utility functions to help with request and response handling:
 
-> Note: `leroute` does not export a `serve` function or a `tagRequest` function. To run a server, pair `leroute` with [leserve](https://www.npmjs.com/package/leserve) (imported directly, e.g. `import serve from "leserve"`) or any server of your choice. To build a `Request` from a template literal, use `createRequest` (see below).
+> Note: `@johnhenry/letterpress` does not export a `serve` function or a `tagRequest` function. To run a server, pair it with [leserve](https://www.npmjs.com/package/@johnhenry/leserve) (imported directly, e.g. `import serve from "@johnhenry/leserve"`) or any server of your choice. To build a `Request` from a template literal, use `createRequest` (see below).
 
 ### createRequest
 
 Creates a new `Request` object from a template literal.
 
 ```javascript
-import { createRequest } from "leroute";
+import { createRequest } from "@johnhenry/letterpress";
 
 const request = await createRequest()`
 GET /api/users HTTP/1.1
@@ -120,7 +120,7 @@ Accept: application/json
 Creates a new `Response` object from a template literal.
 
 ```javascript
-import { createResponse } from "leroute";
+import { createResponse } from "@johnhenry/letterpress";
 
 const response = await createResponse`
 HTTP/1.1 200 OK
@@ -135,7 +135,7 @@ Content-Type: application/json
 A tagged-template function for matching HTTP requests against a method/path/header pattern. It returns an object with `test(request)` and `exec(request)` methods — not `.method`/`.path`/`.version` properties.
 
 ```javascript
-import { HTTPExpression } from "leroute";
+import { HTTPExpression } from "@johnhenry/letterpress";
 
 const expr = HTTPExpression`GET /users/:id`;
 
@@ -150,7 +150,7 @@ expr.exec(new Request("https://example.com/users/123"));
 A low-level tagged-template helper that breaks a template literal down into its raw pieces, without evaluating substitutions into a final string. Returns `{ strings, substitutions, raw }`.
 
 ```javascript
-import { deconstruct } from "leroute";
+import { deconstruct } from "@johnhenry/letterpress";
 
 const { strings, substitutions, raw } = deconstruct`
 POST /api/users HTTP/1.1
@@ -165,10 +165,10 @@ Content-Type: application/json
 A low-level tagged-template helper that concatenates a template literal's strings and substitutions back into a single string (the inverse of `deconstruct`).
 
 ```javascript
-import { cook } from "leroute";
+import { cook } from "@johnhenry/letterpress";
 
 const message = cook`GET /api/users/${123} HTTP/1.1`;
 // "GET /api/users/123 HTTP/1.1"
 ```
 
-This API documentation provides an overview of the main functions and utilities provided by the LeRoute library. For more detailed information on specific use cases and advanced features, please refer to the README.md and the source code.
+This API documentation provides an overview of the main functions and utilities provided by the Route library. For more detailed information on specific use cases and advanced features, please refer to the README.md and the source code.

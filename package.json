@@ -1,12 +1,16 @@
 {
-  "name": "leroute",
-  "version": "0.0.1",
+  "name": "@johnhenry/letterpress",
+  "version": "0.0.0",
   "description": "A tagged-template-string HTTP routing library for defining and matching request handlers with plain JavaScript syntax.",
   "main": "index.mjs",
   "types": "types.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/johnhenry/leroute"
+    "url": "git+https://github.com/johnhenry/letterpress.git"
   },
   "directories": {
     "test": "test"
@@ -25,10 +29,17 @@
     "request",
     "response"
   ],
-  "author": "",
+  "author": "John Henry",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/johnhenry/letterpress/issues"
+  },
+  "homepage": "https://opensource.johnhenry.me/letterpress/",
+  "engines": {
+    "node": ">=26.0.0"
+  },
   "devDependencies": {
-    "leserve": "^0.0.0"
+    "@johnhenry/leserve": "^0.0.0"
   },
   "dependencies": {
     "theres-waldo": "^0.0.0"

@@ -1,6 +1,6 @@
 export { createRequest } from "./create-request.mjs";
-export { createLeRouter } from "./create-lerouter.mjs";
-export { createLeRoute } from "./create-leroute.mjs";
+export { createRouter } from "./create-router.mjs";
+export { createRoute } from "./create-route.mjs";
 export { createResponse } from "./create-response.mjs";
 export { createFSRouter } from "./fs-router.mjs";
 export * from "./utility/index.mjs";

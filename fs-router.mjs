@@ -14,13 +14,13 @@ import theresWaldo from "theres-waldo";
 const { dir } = theresWaldo(import.meta.url);
 
 /**
- * @typedef {import('./types').LeRoute} LeRoute
+ * @typedef {import('./types').Route} Route
  */
 
 /**
  * Creates a filesystem-based router
  * @param {string} baseDir - The base directory for routing
- * @returns {LeRoute} A LeRoute function
+ * @returns {Route} A Route function
  *
  * @description
  * This function creates a router that maps URL paths to a directory structure.
@@ -44,7 +44,7 @@ const { dir } = theresWaldo(import.meta.url);
  * would be available in the request object passed to the handler function.
  *
  * Handler Functions:
- * Each [http method].mjs file should export a default function of type LeRoute.
+ * Each [http method].mjs file should export a default function of type Route.
  * This function will receive the request object, augmented with a 'params' property
  * containing any path parameters.
  *
@@ -130,18 +130,18 @@ export function createFSRouter(
             console.error(e);
             return "";
           });
-        const data = `import {createLeRoute} from "${path.join(
+        const data = `import {createRoute} from "${path.join(
           dir,
           "./index.mjs"
         )}";
-        export default createLeRoute()\`${file}\``;
+        export default createRoute()\`${file}\``;
         // Write the synthesized temp module next to the matched route's
-        // index.html (currentPath), not into leroute's own package
+        // index.html (currentPath), not into letterpress's own package
         // directory (dir). Writing into the package dir means every
         // index.html request requires the installed package directory
-        // (e.g. node_modules/leroute) to be writable, which commonly isn't
-        // true in production (read-only installs/containers), and has
-        // nothing to do with the route being served.
+        // (e.g. node_modules/@johnhenry/letterpress) to be writable, which
+        // commonly isn't true in production (read-only installs/
+        // containers), and has nothing to do with the route being served.
         module = await dynamicRun(data, currentPath);
       } else {
         module = await import(fileUrl);

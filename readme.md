@@ -1,13 +1,16 @@
-# LeRoute
+# Letterpress
 
-[![npm version](https://badge.fury.io/js/leroute.svg)](https://badge.fury.io/js/leroute)
+[![npm version](https://badge.fury.io/js/%40johnhenry%2Fletterpress.svg)](https://www.npmjs.com/package/@johnhenry/letterpress)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<img alt="LeRoute Logo" width="512" height="512" src="./logo.jpeg" style="width:512px;height:512px"/>
+<img alt="Letterpress Logo" width="512" height="512" src="./logo.jpeg" style="width:512px;height:512px"/>
 
-LeRoute is a flexible and powerful routing library for handling HTTP requests and responses in JavaScript and TypeScript applications.
+> Previously published as `leroute`, last unscoped version `0.0.1`. Now
+> `@johnhenry/letterpress`, restarting at `0.0.0`.
 
-LeRoute works greate with [LeServe](https://www.npmjs.com/package/leserve), a library for serving endpoints.
+Letterpress is a flexible and powerful routing library for handling HTTP requests and responses in JavaScript and TypeScript applications.
+
+Letterpress works great with [leserve](https://www.npmjs.com/package/@johnhenry/leserve), a library for serving endpoints.
 
 ## 🚀 Features
 
@@ -21,13 +24,13 @@ LeRoute works greate with [LeServe](https://www.npmjs.com/package/leserve), a li
 ## 📦 Installation
 
 ```bash
-npm install leroute
+npm install @johnhenry/letterpress
 ```
 
 Or using yarn:
 
 ```bash
-yarn add leroute
+yarn add @johnhenry/letterpress
 ```
 
 ## 🛠 Usage
@@ -35,11 +38,11 @@ yarn add leroute
 ### Basic Example
 
 ```javascript
-import serve from "leserve";
-import { createLeRouter, createLeRoute } from "leroute";
+import serve from "@johnhenry/leserve";
+import { createRouter, createRoute } from "@johnhenry/letterpress";
 
 // Create a router
-const router = createLeRouter();
+const router = createRouter();
 
 // Define a simple route
 router.endpoint`GET /``
@@ -48,10 +51,10 @@ router.endpoint`GET /``
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to LeRoute</title>
+    <title>Welcome to Route</title>
   </head>
   <body>
-    <h1>Welcome to LeRoute!</h1>
+    <h1>Welcome to Route!</h1>
     <p>The current time is: ${() => new Date().toISOString()}</p>
   </body>
 </html>
@@ -80,10 +83,10 @@ serve({ port: 8080 }, router);
 ### Advanced Usage
 
 ```javascript
-import serve from "leserve";
-import { createLeRouter, createLeRoute } from "leroute";
+import serve from "@johnhenry/leserve";
+import { createRouter, createRoute } from "@johnhenry/letterpress";
 
-const router = createLeRouter();
+const router = createRouter();
 
 // JSON API endpoint
 router.endpoint`GET /api/data`(async (request) => {
@@ -119,7 +122,7 @@ serve({ port: 8080 }, router, { errorHandler });
 
 ## 📘 API Reference
 
-### `createLeRouter(options?: LeRouterInit): LeRouter`
+### `createRouter(options?: RouterInit): Router`
 
 Creates a new router instance.
 
@@ -130,7 +133,7 @@ Creates a new router instance.
 - `errorHandler`: Custom error handler function (optional)
 - `cache`: Caching options (optional)
 
-### `createLeRoute(options?: LeRouteInit): LeRoute`
+### `createRoute(options?: RouteInit): Route`
 
 Creates a new route handler.
 
@@ -146,7 +149,7 @@ Creates a new route handler.
 A tagged-template function for matching HTTP requests against a method/path/header pattern.
 
 ```javascript
-import { HTTPExpression } from "leroute";
+import { HTTPExpression } from "@johnhenry/letterpress";
 
 const expr = HTTPExpression`GET /users/:id`;
 expr.test(request); // boolean — does this request match?
@@ -159,13 +162,13 @@ Tagged-template functions for building `Request`/`Response` objects from raw HTT
 
 ### `createFSRouter`
 
-Builds a `LeRouter` from a filesystem-based route directory.
+Builds a `Router` from a filesystem-based route directory.
 
 ### `deconstruct`, `cook`
 
 Lower-level utility functions used to parse and process tagged HTTP template literals. See [api.md](./api.md) for details.
 
-> Note: `leroute` does not export a `serve` function. To actually run a server, pair `leroute` with [leserve](https://www.npmjs.com/package/leserve) (or any server of your choice) as shown in the usage examples above.
+> Note: `@johnhenry/letterpress` does not export a `serve` function. To actually run a server, pair it with [leserve](https://www.npmjs.com/package/@johnhenry/leserve) (or any server of your choice) as shown in the usage examples above.
 
 ## 📜 Changelog
 
@@ -177,16 +180,32 @@ This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### [Unreleased]
 
+#### Changed (breaking)
+
+- **Renamed the package from `leroute` to `@johnhenry/letterpress`**, and
+  restarted the version at `0.0.0` (previously published as `leroute`, last
+  unscoped version `0.0.1`).
+- **Renamed the exported identifiers to match**: `createLeRoute` →
+  `createRoute`, `createLeRouter` → `createRouter`, `LeRoute` → `Route`,
+  `LeRouteInit` → `RouteInit`, `LeRouteMiddleware` → `RouteMiddleware`,
+  `LeRouter` → `Router`, `LeRouterExtension` → `RouterExtension`,
+  `LeRouterInit` → `RouterInit`, `LeRouterMiddleware` → `RouterMiddleware`.
+  `create-leroute.mjs`/`create-lerouter.mjs` were also renamed to
+  `create-route.mjs`/`create-router.mjs` (and their test files
+  correspondingly), matching the new export names.
+- **Raised `engines.node` to `>=26.0.0`**, matching the rest of the
+  `@johnhenry/*` family's floor.
+
 #### Fixed
 
-- 🐛 `test/index.mjs` imported `lerouter.mjs` twice and never imported `leroute.mjs`, silently dropping the `createLeRoute` test suite from `npm test`
-- 🐛 `test/leroute.mjs` imported `createLeRoute` from `create-lerouter.mjs` (which doesn't export it) instead of `create-leroute.mjs`, which would have thrown once the missing import above was fixed
+- 🐛 `test/index.mjs` imported `lerouter.mjs` twice and never imported `leroute.mjs`, silently dropping the `createRoute` test suite from `npm test`
+- 🐛 `test/leroute.mjs` imported `createRoute` from `create-router.mjs` (which doesn't export it) instead of `create-route.mjs`, which would have thrown once the missing import above was fixed
 - 🐛 `package.json` declared `"license": "ISC"` while the `LICENSE` file and README badge are MIT; changed to `"license": "MIT"` to match
 - 📝 README and API docs referenced `serve` and `tagRequest` as exports of `leroute`; neither is exported — `serve` comes from the separate `leserve` package, and `tagRequest` doesn't exist. Docs corrected to list the real exports
 - 📝 API docs showed `HTTPExpression(...)` as a constructor with `.method`/`.path`/`.version` properties; corrected to show it as a tagged-template function returning `{ test(request), exec(request) }`
-- 🔒 **Security**: `router.endpoint` reused the per-request context object (which carries the incoming request's `Headers`) as the response-init object passed to `createLeRoute`, so every incoming request header — `Authorization`, `Cookie`, arbitrary custom headers — was echoed back on every response
-- 🐛 `createLeRouter`'s dispatch loop called `handler(request, ctx)` without `await`, so an async handler that threw was never caught by the configured `errorHandler`/`defaultHandler` and instead crashed as an unhandled rejection
-- 🐛 `createLeRoute` threw `Cannot read properties of null/undefined (reading 'toString')` on a `${null}`/`${undefined}` substitution instead of rendering nothing (ordinary template-literal semantics), even though a substitution *function* returning `undefined` was already treated as "no output"
+- 🔒 **Security**: `router.endpoint` reused the per-request context object (which carries the incoming request's `Headers`) as the response-init object passed to `createRoute`, so every incoming request header — `Authorization`, `Cookie`, arbitrary custom headers — was echoed back on every response
+- 🐛 `createRouter`'s dispatch loop called `handler(request, ctx)` without `await`, so an async handler that threw was never caught by the configured `errorHandler`/`defaultHandler` and instead crashed as an unhandled rejection
+- 🐛 `createRoute` threw `Cannot read properties of null/undefined (reading 'toString')` on a `${null}`/`${undefined}` substitution instead of rendering nothing (ordinary template-literal semantics), even though a substitution *function* returning `undefined` was already treated as "no output"
 - 🐛 A substitution *function* returning a `ReadableStream`/`Blob`/`ArrayBuffer`/`Uint8Array` fell through to `.toString()`, producing the literal string `"[object ReadableStream]"` instead of streaming the actual content (direct substitutions of these types already worked correctly)
 - 🐛 `utility/dynamic-run.mjs` unconditionally attempted to `fs.unlink()` its temp file even when `fs.writeFile()` itself had failed, masking the real write error behind a misleading `ENOENT` — which `fs-router.mjs` then silently treated as "route not found" instead of surfacing a genuine permissions/disk-full failure. A cleanup (`unlink`) failure *after* a successful import also discarded the successful result
 - 🐛 `fs-router.mjs`'s `index.html` handling wrote its synthesized temp module into leroute's own installed package directory instead of the matched route's directory — breaking the feature entirely in any deployment where the package install directory is read-only (containers, CI-built images)
@@ -204,7 +223,7 @@ This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
-- 🎉 Initial release of LeRoute
+- 🎉 Initial release of Route
 - 🛠 Core routing functionality
 - 🛠 HTTP request and response handling
 - 🛠 TypeScript definitions
@@ -212,7 +231,7 @@ This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🤝 Contributing
 
-We welcome contributions to LeRoute! Here's how you can help:
+We welcome contributions to Route! Here's how you can help:
 
 1. Fork the repository
 2. Create a new branch: `git checkout -b feature/your-feature-name`
@@ -228,7 +247,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgements
 
-- Thanks to all contributors who have helped shape LeRoute
+- Thanks to all contributors who have helped shape Route
 - Inspired by modern web development practices and the need for flexible routing solutions
 
 ## 📬 Contact
@@ -237,4 +256,4 @@ For questions, suggestions, or issues, please open an issue on the GitHub reposi
 
 ---
 
-Happy routing with LeRoute! 🚀
+Happy routing with Route! 🚀

@@ -1,4 +1,4 @@
-import { createLeRouter } from "../create-lerouter.mjs";
+import { createRouter } from "../create-router.mjs";
 import HTTPExpression, {
   InlineParameter,
   HeaderMatch,
@@ -7,8 +7,8 @@ import HTTPExpression, {
 import { describe, it, test } from "node:test";
 import assert from "node:assert";
 
-test("LeRouter - Basic routing", async () => {
-  const router = createLeRouter();
+test("Router - Basic routing", async () => {
+  const router = createRouter();
   router.endpoint`GET /``Hello, World!`;
   const request = new Request("http://example.com/");
   const response = await router(request);
@@ -16,8 +16,8 @@ test("LeRouter - Basic routing", async () => {
   assert.equal(response.status, 200);
 });
 
-test("LeRouter - URL parameters", async () => {
-  const router = createLeRouter();
+test("Router - URL parameters", async () => {
+  const router = createRouter();
   router.endpoint`GET /user/:id``User ID: ${(_, { params }) => params.id}`;
 
   const request = new Request("http://example.com/user/123");
@@ -25,8 +25,8 @@ test("LeRouter - URL parameters", async () => {
   assert.equal(await response.text(), "User ID: 123");
 });
 
-test("LeRouter - 404 for unmatched routes", async () => {
-  const router = createLeRouter();
+test("Router - 404 for unmatched routes", async () => {
+  const router = createRouter();
   router.endpoint`GET /``Hello, World!`;
 
   const request = new Request("http://example.com/not-found");
@@ -34,8 +34,8 @@ test("LeRouter - 404 for unmatched routes", async () => {
   assert.equal(response.status, 404);
 });
 
-test("LeRouter - Custom error handler", async () => {
-  const router = createLeRouter({
+test("Router - Custom error handler", async () => {
+  const router = createRouter({
     errorHandler: (error, request) =>
       new Response(`Custom Error: ${error.message}`, { status: 500 }),
   });
@@ -49,13 +49,13 @@ test("LeRouter - Custom error handler", async () => {
   assert.equal(await response.text(), "Custom Error: Test Error");
 });
 
-test("LeRouter - Custom error handler catches rejections from async handlers", async () => {
+test("Router - Custom error handler catches rejections from async handlers", async () => {
   // Regression test: an earlier version did `return handler(...)` inside the
   // try block instead of `return await handler(...)`. Since calling an async
   // function always returns a promise (even when it throws synchronously),
   // that throw never surfaced inside the try/catch, so the rejection escaped
   // past errorHandler entirely instead of producing a 500 response.
-  const router = createLeRouter({
+  const router = createRouter({
     errorHandler: (error, request) =>
       new Response(`Custom Error: ${error.message}`, { status: 500 }),
   });
@@ -69,15 +69,15 @@ test("LeRouter - Custom error handler catches rejections from async handlers", a
   assert.equal(await response.text(), "Custom Error: Async Test Error");
 });
 
-test("LeRouter - does not leak request headers into the response", async () => {
+test("Router - does not leak request headers into the response", async () => {
   // Regression test: the handler wrapper created by `router.endpoint` used
   // to pass the per-request context object (which includes `headers` set to
   // the *request's* Headers, so substitution functions can read them) into
-  // createLeRoute() as its LeRouteInit. createLeRoute seeds the response
+  // createRoute() as its RouteInit. createRoute seeds the response
   // Headers from `init.headers`, so every request header (Cookie,
   // Authorization, arbitrary custom headers) was being echoed back as a
   // response header.
-  const router = createLeRouter();
+  const router = createRouter();
   router.endpoint`GET /secure``Hello, World!`;
 
   const request = new Request("http://example.com/secure", {
@@ -94,10 +94,10 @@ test("LeRouter - does not leak request headers into the response", async () => {
   assert.equal(await response.text(), "Hello, World!");
 });
 
-test("LeRouter - substitution functions can still read request context after the header fix", async () => {
+test("Router - substitution functions can still read request context after the header fix", async () => {
   // Companion to the header-leak regression test above: fixing that bug must
   // not remove handlers' ability to read params/method/headers via context.
-  const router = createLeRouter();
+  const router = createRouter();
   router.endpoint`GET /user/:id``ID:${(_, { params }) =>
     params.id} Method:${(_, { method }) => method} Accept:${(
     _,
@@ -111,8 +111,8 @@ test("LeRouter - substitution functions can still read request context after the
   assert.equal(await response.text(), "ID:42 Method:GET Accept:text/plain");
 });
 
-test("LeRouter - Multiple routes", async () => {
-  const router = createLeRouter();
+test("Router - Multiple routes", async () => {
+  const router = createRouter();
   router.endpoint`GET /``Home`;
   router.endpoint`GET /about``About`;
   router.endpoint`GET /contact``Contact`;
@@ -128,8 +128,8 @@ test("LeRouter - Multiple routes", async () => {
   }
 });
 
-test("LeRouter - Method matching", async () => {
-  const router = createLeRouter();
+test("Router - Method matching", async () => {
+  const router = createRouter();
   router.endpoint`GET /api``GET API`;
   router.endpoint`POST /api``POST API`;
 
@@ -143,8 +143,8 @@ test("LeRouter - Method matching", async () => {
   assert.equal(await postResponse.text(), "POST API");
 });
 
-test("LeRouter - Nested routes", async () => {
-  const router = createLeRouter();
+test("Router - Nested routes", async () => {
+  const router = createRouter();
   router.endpoint`GET /api/v1/users``API v1 Users`;
   router.endpoint`GET /api/v2/users``API v2 Users`;
 
@@ -158,8 +158,8 @@ test("LeRouter - Nested routes", async () => {
   assert.equal(await v2Response.text(), "API v2 Users");
 });
 
-test("LeRouter - Function handler", async () => {
-  const router = createLeRouter();
+test("Router - Function handler", async () => {
+  const router = createRouter();
   router.endpoint`GET /function`((request) => {
     return new Response("Function handler", { status: 200 });
   });
@@ -173,8 +173,8 @@ test("LeRouter - Function handler", async () => {
 
 // Commented out tests
 /*
-test("LeRouter - InlineParam", async () => {
-  const router = createLeRouter();
+test("Router - InlineParam", async () => {
+  const router = createRouter();
   const id = InlineParam({
     name: "id",
     type: "number",
@@ -188,8 +188,8 @@ test("LeRouter - InlineParam", async () => {
   assert.equal(await response.text(), "User ID: 123");
 });
 
-test("LeRouter - HeaderMatch", async () => {
-  const router = createLeRouter();
+test("Router - HeaderMatch", async () => {
+  const router = createRouter();
   const jsonHeader = HeaderMatch({
     name: "Content-Type",
     value: "application/json",

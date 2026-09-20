@@ -1,7 +1,7 @@
-import { createLeRoute } from "./create-leroute.mjs";
+import { createRoute } from "./create-route.mjs";
 import { HTTPExpression } from "./utility/http-expression.mjs";
 /** @type {CreateRouter} */
-export const createLeRouter = (initial = {}) => {
+export const createRouter = (initial = {}) => {
   const routes = [];
   const {
     defaultHandler = (request) =>
@@ -47,12 +47,12 @@ export const createLeRouter = (initial = {}) => {
             // builds as `{ ...init, ...match }`, i.e. it includes `headers`
             // set to the *request's* Headers (see matcher above) so that
             // substitution functions can read `context.headers`. It must
-            // NOT be used as the LeRouteInit passed to createLeRoute, or
+            // NOT be used as the RouteInit passed to createRoute, or
             // the request's headers (Cookie, Authorization, etc.) would be
             // used to seed - and thus leak into - the response headers.
-            // createLeRoute is given only the router-level `init` instead.
+            // createRoute is given only the router-level `init` instead.
             (request, context) =>
-              createLeRoute(init)(values, ...substitutions)(request, context);
+              createRoute(init)(values, ...substitutions)(request, context);
       routes.push([matcher, handler]);
       return router;
     };

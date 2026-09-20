@@ -1,6 +1,6 @@
-import { createLeRoute } from "./create-leroute.mjs";
+import { createRoute } from "./create-route.mjs";
 
 export const createResponse = (strings, ...substitutions) =>
-  createLeRoute()(strings, ...substitutions)();
+  createRoute()(strings, ...substitutions)();
 
 export default createResponse;

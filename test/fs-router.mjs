@@ -6,15 +6,15 @@ import os from "os";
 import { createFSRouter } from "../fs-router.mjs";
 
 test("fs-router - writes the synthesized index.html temp module into the matched route directory", async () => {
-  // Regression test: fs-router used to pass leroute's own package directory
+  // Regression test: fs-router used to pass letterpress's own package directory
   // (from theresWaldo(import.meta.url)) to dynamicRun instead of the
   // matched route's directory. That meant every index.html request required
-  // the *installed package's own directory* (e.g. node_modules/leroute) to
+  // the *installed package's own directory* (e.g. node_modules/@johnhenry/letterpress) to
   // be writable - unrelated to, and often less permissive than, the app's
   // own route directory - and had nothing to do with where the index.html
   // actually lived.
   const tmpRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), "leroute-fsrouter-")
+    path.join(os.tmpdir(), "letterpress-fsrouter-")
   );
   const routeDir = path.join(tmpRoot, "routes");
   await fs.mkdir(routeDir, { recursive: true });
@@ -48,7 +48,7 @@ test("fs-router - writes the synthesized index.html temp module into the matched
     assert.equal(
       path.dirname(writtenPaths[0]),
       routeDir,
-      "temp module should be written into the matched route directory, not the leroute package directory"
+      "temp module should be written into the matched route directory, not the letterpress package directory"
     );
   } finally {
     await fs.rm(tmpRoot, { recursive: true, force: true });
@@ -57,7 +57,7 @@ test("fs-router - writes the synthesized index.html temp module into the matched
 
 test("fs-router - cleans up its temp module after serving an index.html route", async () => {
   const tmpRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), "leroute-fsrouter-")
+    path.join(os.tmpdir(), "letterpress-fsrouter-")
   );
   const routeDir = path.join(tmpRoot, "routes");
   await fs.mkdir(routeDir, { recursive: true });
