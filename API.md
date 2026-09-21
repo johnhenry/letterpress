@@ -1,4 +1,4 @@
-# Route API Documentation
+# Letterpress API Documentation
 
 ## Table of Contents
 
@@ -98,7 +98,7 @@ Content-Type: application/json
 
 ## Utility Functions
 
-Route provides several utility functions to help with request and response handling:
+Letterpress provides several utility functions to help with request and response handling:
 
 > Note: `@johnhenry/letterpress` does not export a `serve` function or a `tagRequest` function. To run a server, pair it with [leserve](https://www.npmjs.com/package/@johnhenry/leserve) (imported directly, e.g. `import serve from "@johnhenry/leserve"`) or any server of your choice. To build a `Request` from a template literal, use `createRequest` (see below).
 
@@ -171,4 +171,4 @@ const message = cook`GET /api/users/${123} HTTP/1.1`;
 // "GET /api/users/123 HTTP/1.1"
 ```
 
-This API documentation provides an overview of the main functions and utilities provided by the Route library. For more detailed information on specific use cases and advanced features, please refer to the README.md and the source code.
+This API documentation provides an overview of the main functions and utilities provided by the Letterpress library. For more detailed information on specific use cases and advanced features, please refer to the README.md and the source code.
