@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
-## [Unreleased]
+## [0.0.0] - npm scope migration - 2026-09-19
 
 ### Changed (breaking)
 
@@ -47,7 +47,14 @@ This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Deleted `utility/cd.mjs`, an unused debug scratch file with no imports and no tests
 
-## [0.0.0] - 2024-08-26
+## 0.0.0 (as `Route`/`loute`, pre-rename) - 2024-08-26
+
+> Disambiguation: this is the *original* initial release, under an earlier
+> name and a separate version-number sequence (`phrouter` 1.0.0 -> `loute`
+> 0.0.0 -> `leroute` 0.0.0 -> `leroute` 0.0.1), predating the npm scope
+> migration entry above, which is also numbered `0.0.0` per family
+> convention (the version resets on scope import). These are two different
+> releases that happen to share a version number.
 
 ### Added
 

@@ -1,8 +1,10 @@
 # Letterpress
 
-[![npm version](https://badge.fury.io/js/%40johnhenry%2Fletterpress.svg)](https://www.npmjs.com/package/@johnhenry/letterpress)
+[![npm version](https://img.shields.io/npm/v/%40johnhenry%2Fletterpress.svg)](https://www.npmjs.com/package/@johnhenry/letterpress)
 [![CI](https://github.com/johnhenry/letterpress/actions/workflows/ci.yml/badge.svg)](https://github.com/johnhenry/letterpress/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![license](https://img.shields.io/npm/l/%40johnhenry%2Fletterpress.svg)](license)
+
+Full documentation: [opensource.johnhenry.me/letterpress](https://opensource.johnhenry.me/letterpress/)
 
 <img alt="Letterpress Logo" width="512" height="512" src="./logo.jpeg" style="width:512px;height:512px"/>
 
@@ -12,6 +14,18 @@
 Letterpress is a flexible and powerful routing library for handling HTTP requests and responses in JavaScript and TypeScript applications.
 
 Letterpress works great with [leserve](https://www.npmjs.com/package/@johnhenry/leserve), a library for serving endpoints.
+
+## Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [API Reference](#-api-reference)
+- [Honest limitations](#honest-limitations)
+- [Changelog](#-changelog)
+- [Family](#family)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🚀 Features
 
@@ -171,9 +185,50 @@ Lower-level utility functions used to parse and process tagged HTTP template lit
 
 > Note: `@johnhenry/letterpress` does not export a `serve` function. To actually run a server, pair it with [leserve](https://www.npmjs.com/package/@johnhenry/leserve) (or any server of your choice) as shown in the usage examples above.
 
+## Honest limitations
+
+- **`createRoute` template substitutions are not HTML-escaped.** A
+  substitution value is inserted via `.toString()` and spliced directly
+  into the response body; there is no auto-escaping step, even though the
+  default `Content-Type` is `text/html`. Interpolating untrusted input
+  (request params, headers, query values) directly into an
+  `` router.endpoint`GET /...`` `` HTML template -- e.g.
+  `` `<p>${(_, {params}) => params.id}</p>` `` -- reflects that value
+  byte-for-byte into the response. Escape anything derived from the request
+  yourself (e.g. a small HTML-escaping helper) before interpolating it, the
+  same way you would with any other unescaped template-literal HTML
+  response.
+- **`createFSRouter`'s `index.html` handling evaluates the file as live
+  JavaScript, not literal text.** To reuse `createRoute`'s own template
+  engine for static `index.html` files, `fs-router.mjs` reads the file's
+  raw content and splices it directly into a synthesized module string as
+  a template literal (`` export default createRoute()`${file}` ``), then
+  dynamically imports and runs that module. Any literal backtick or
+  `${...}` sequence inside that `index.html` file is interpreted as real
+  JavaScript in the synthesized module's scope, not rendered as text. This
+  is fine for trusted, hand-authored `index.html` files (the intended use),
+  but `index.html` files under a filesystem route tree should be treated as
+  code, not as passive markup, if their contents are ever user-editable.
+
 ## 📜 Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md) for the full history of changes.
+
+## Family
+
+Letterpress isn't a standalone server -- it deliberately doesn't export a
+`serve` function (see the note at the end of the API Reference above), and
+is designed to pair with a sibling package that does.
+
+- **[`@johnhenry/leserve`](https://github.com/johnhenry/leserve)** -- a
+  library for serving endpoints. `createRouter()`'s output (a `Route`
+  function matching `(request, additionalContext) => Promise<Response>`) is
+  exactly the shape `leserve`'s `serve()` accepts as its handler, so pairing
+  the two needs no adapter -- `serve({ port }, router)`, as shown throughout
+  this README's usage examples. Any other server that can call a
+  `Route`-shaped function works too; `leserve` is the tested, documented
+  pairing, not a hard dependency (it's a `devDependency` here, used only in
+  the demo scripts).
 
 ## 🤝 Contributing
 
