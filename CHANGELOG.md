@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [Unreleased]
+
+### Fixed
+
+- The colon-form header matcher documented in the README, `[Authorization: Bearer *]`,
+  was parsed as header name `"Authorization: Bearer"` with operator `*`, so `headers.get()`
+  threw `invalid header name` inside the router's dispatch loop and **every** request to a
+  router with such a route got a 500. `parseHeaderMatcher` now recognises `[Name: value]`
+  as its own syntax, with `*` / `?` as glob wildcards in the value, and the operator form's
+  name group no longer swallows `:` or whitespace. Regression tests added. (#4)
+
+### Added
+
+- README section documenting every header-matcher operator, including the colon form.
+
 ## [0.0.0] - npm scope migration - 2026-09-19
 
 ### Changed (breaking)

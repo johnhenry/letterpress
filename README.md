@@ -122,6 +122,22 @@ Content-Type: text/plain
 This is a protected resource
 `;
 
+### Header matchers
+
+A route can require request headers with one or more `[...]` matchers after the path.
+Two syntaxes are accepted:
+
+| Syntax | Meaning |
+|---|---|
+| `[Name]` / `[!Name]` | header present / absent |
+| `[Name=value]` | exact match |
+| `[Name^=value]`, `[Name$=value]`, `[Name*=value]` | starts with / ends with / contains |
+| `[Name~=regex]` | regular expression (prefix with `(?i)` for case-insensitive) |
+| `[Name>3]`, `[Name<=10]` | numeric comparison |
+| `[Name: value]` | HTTP-style colon form; `*` matches any run of characters and `?` one character, so `[Authorization: Bearer *]` accepts any bearer token and `[Accept: text/*]` any text type. Without a wildcard it is an exact match. |
+
+Matchers never throw: a request that lacks the header simply doesn't match the route.
+
 // Custom error handling
 router.endpoint`GET /error`(() => {
   throw new Error("Intentional error");

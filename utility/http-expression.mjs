@@ -87,8 +87,30 @@ export const HTTPExpression = (strings, ...expressions) => {
   };
 };
 
+/**
+ * Parse one bracketed header matcher into { name, operator, value, negate }.
+ *
+ * Two syntaxes are accepted:
+ *   [Name<op>value]      operator form, e.g. [Authorization^=Bearer], [X-Count>3], [!X-Deprecated]
+ *   [Name: value]        colon form (HTTP header syntax), e.g. [Authorization: Bearer *]
+ *
+ * In the colon form the value is a glob: `*` matches any run of characters and
+ * `?` matches one, so `[Authorization: Bearer *]` matches any bearer token.
+ * A colon-form value with no wildcard is an exact match.
+ */
 const parseHeaderMatcher = (headerString) => {
-  const match = headerString.match(/\[(!?)([^=~^$*<>]+)([=~^$*<>]+)?(.+)?\]/);
+  // Colon form first: the name is a bare token, then ":", then the (glob) value.
+  const colon = headerString.match(/^\[(!?)([A-Za-z0-9!#$%&'*+.^_`|~-]+)\s*:\s*(.*?)\s*\]$/);
+  if (colon) {
+    const [, negation, name, value] = colon;
+    return createHeaderMatcherFunction({
+      name: name.trim(),
+      operator: /[*?]/.test(value) ? "glob" : value === "" ? "exists" : "=",
+      value,
+      negate: !!negation,
+    });
+  }
+  const match = headerString.match(/\[(!?)([^=~^$*<>:\s]+)\s*([=~^$*<>]+)?(.+)?\]/);
   if (!match) {
     throw new Error(`Invalid header matcher: ${headerString}`);
   }
@@ -100,6 +122,11 @@ const parseHeaderMatcher = (headerString) => {
     negate: !!negation,
   });
 };
+
+const globToRegExp = (glob) =>
+  new RegExp(
+    "^" + glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$"
+  );
 
 const createHeaderMatcherFunction = ({ name, operator, value, negate }) => {
   return (headers) => {
@@ -134,6 +161,9 @@ const createHeaderMatcherFunction = ({ name, operator, value, negate }) => {
           break;
         case "*=":
           match = headerValue.includes(value || "");
+          break;
+        case "glob":
+          match = globToRegExp(value || "").test(headerValue);
           break;
         case ">":
           match = parseFloat(headerValue) > parseFloat(value || "0");

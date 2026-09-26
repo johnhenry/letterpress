@@ -20,6 +20,41 @@ test("HTTPExpression - Comprehensive Tests", async (t) => {
     });
   });
 
+  await t.test("Colon-form header matcher from the README: [Authorization: Bearer *]", () => {
+    const expr = HTTPExpression`GET /protected [Authorization: Bearer *]`;
+    const withToken = new Request("https://api.example.com/protected", {
+      method: "GET",
+      headers: { Authorization: "Bearer abc.def.ghi" },
+    });
+    const wrongScheme = new Request("https://api.example.com/protected", {
+      method: "GET",
+      headers: { Authorization: "Basic abc" },
+    });
+    const noHeader = new Request("https://api.example.com/protected", { method: "GET" });
+    assert.strictEqual(expr.test(withToken), true);
+    assert.strictEqual(expr.test(wrongScheme), false);
+    // Regression: used to throw "invalid header name" instead of returning false.
+    assert.strictEqual(expr.test(noHeader), false);
+  });
+
+  await t.test("Colon-form header matcher: exact value, negation and glob edge cases", () => {
+    const exact = HTTPExpression`GET /x [Content-Type: application/json]`;
+    assert.strictEqual(exact.test(new Request("https://a/x", { headers: { "Content-Type": "application/json" } })), true);
+    assert.strictEqual(exact.test(new Request("https://a/x", { headers: { "Content-Type": "application/json; charset=utf-8" } })), false);
+
+    const negated = HTTPExpression`GET /x [!X-Deprecated: *]`;
+    assert.strictEqual(negated.test(new Request("https://a/x")), true);
+    assert.strictEqual(negated.test(new Request("https://a/x", { headers: { "X-Deprecated": "1" } })), false);
+
+    const glob = HTTPExpression`GET /x [Accept: text/*]`;
+    assert.strictEqual(glob.test(new Request("https://a/x", { headers: { Accept: "text/html" } })), true);
+    assert.strictEqual(glob.test(new Request("https://a/x", { headers: { Accept: "application/json" } })), false);
+
+    const dotted = HTTPExpression`GET /x [X-Version: 1.?]`;
+    assert.strictEqual(dotted.test(new Request("https://a/x", { headers: { "X-Version": "1.5" } })), true);
+    assert.strictEqual(dotted.test(new Request("https://a/x", { headers: { "X-Version": "1x5" } })), false);
+  });
+
   await t.test("POST request with JSON body and headers", () => {
     const expr = HTTPExpression`POST /api/articles [Content-Type=application/json] [Authorization^=Bearer]`;
     const request = new Request("https://api.example.com/api/articles", {
