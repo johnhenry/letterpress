@@ -179,6 +179,18 @@ Tagged-template functions for building `Request`/`Response` objects from raw HTT
 
 Builds a `Router` from a filesystem-based route directory.
 
+```javascript
+import { createFSRouter } from "@johnhenry/letterpress/fs";
+```
+
+> `createFSRouter` is imported from the `@johnhenry/letterpress/fs`
+> subpath, not the main `@johnhenry/letterpress` barrel. It's the only
+> piece of Letterpress that touches Node built-ins (`node:fs`, `node:path`)
+> and the `theres-waldo` dependency, so it's kept out of the main entry
+> point to keep that entry point bundler-friendly for browser use. Everything
+> else (`createRouter`, `createRoute`, `createRequest`, `createResponse`,
+> `HTTPExpression`) is pure and safe to bundle for the browser.
+
 ### `deconstruct`, `cook`
 
 Lower-level utility functions used to parse and process tagged HTTP template literals. See [api.md](./api.md) for details.

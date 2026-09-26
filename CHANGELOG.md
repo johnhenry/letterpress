@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.0.1] - 2026-09-26
+
+### Fixed
+
+- 🐛 **Security/reliability**: The colon-form header matcher documented in
+  the README (`` router.endpoint`GET /protected [Authorization: Bearer *]` ``)
+  parsed the `:` and everything up to the wildcard as part of the header
+  *name* instead of stopping the name at `:`, so `headers.get()` threw
+  `TypeError: invalid header name`. Because `createRouter`'s dispatch loop
+  calls matchers inside a top-level try/catch, this 500'd **every** request
+  routed through a router with such a route registered — not just requests
+  matching that path — for any consumer who followed the README's own
+  documented syntax. `parseHeaderMatcher`'s header-name capture now stops at
+  `:` (in addition to the existing operator characters), and the value
+  after the colon is treated as a wildcard-match pattern (`*` matches any
+  run of characters), so `[Authorization: Bearer *]` matches any bearer
+  token instead of crashing. The operator-form equivalent,
+  `[Authorization^=Bearer]`, is unaffected and continues to work
+  ([#4](https://github.com/johnhenry/letterpress/issues/4))
+- 🐛 **Bundling**: The main barrel (`index.mjs`) re-exported `createFSRouter`
+  from `fs-router.mjs`, which imports `node:fs`, `node:path`, and
+  `theres-waldo` (itself using `node:url`'s `fileURLToPath`) at module top
+  level. Those imports run at *import* time, so simply importing anything
+  from `@johnhenry/letterpress` — even `HTTPExpression` or `createRoute`,
+  which have nothing to do with the filesystem router — pulled in
+  Node-only code and broke browser bundlers (e.g. Vite), even when the
+  Node builtins were shimmed, because the fs-router module body still ran.
+  `createFSRouter` is no longer re-exported from the main barrel; it's now
+  reachable via a dedicated `@johnhenry/letterpress/fs` subpath (added to a
+  new `package.json` `"exports"` map, alongside a `"./*"` wildcard so
+  existing deep-path imports like
+  `@johnhenry/letterpress/utility/http-expression.mjs` keep working
+  unchanged). Everything else in the barrel (`createRouter`, `createRoute`,
+  `createRequest`, `createResponse`, `HTTPExpression`) was already pure and
+  is now verified to bundle cleanly for the browser
+  ([#6](https://github.com/johnhenry/letterpress/issues/6))
+
+### Changed (breaking)
+
+- **`createFSRouter` is no longer exported from the main `@johnhenry/letterpress`
+  barrel.** Import it from `@johnhenry/letterpress/fs` instead. This is the
+  only export affected; everything else's import path is unchanged.
+
 ## [0.0.0] - npm scope migration - 2026-09-19
 
 ### Changed (breaking)

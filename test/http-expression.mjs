@@ -599,4 +599,64 @@ test("HTTPExpression - Additional Tests", async (t) => {
     });
     assert.strictEqual(expr.test(request), true);
   });
+
+  // Regression tests for https://github.com/johnhenry/letterpress/issues/4:
+  // `[Authorization: Bearer *]` (the README's colon-form matcher) used to
+  // fold ": Bearer" into the header *name*, so `headers.get()` threw
+  // `TypeError: invalid header name` -- and since the router calls matchers
+  // inside a top-level try/catch, that 500'd EVERY request routed through
+  // a matcher registered with this syntax, not just matching requests.
+  await t.test(
+    "Colon-form header matcher does not throw when the header is absent (issue #4 repro)",
+    () => {
+      const expr = HTTPExpression(["GET /admin [Authorization: Bearer *]"]);
+      const request = new Request("http://localhost/admin", {
+        method: "GET",
+      });
+      assert.doesNotThrow(() => expr.test(request));
+      // No Authorization header present, so the wildcard match fails.
+      assert.strictEqual(expr.test(request), false);
+    }
+  );
+
+  await t.test(
+    "Colon-form header matcher wildcard-matches any bearer token",
+    () => {
+      const expr = HTTPExpression(["GET /admin [Authorization: Bearer *]"]);
+      const request = new Request("http://localhost/admin", {
+        method: "GET",
+        headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.abc" },
+      });
+      assert.strictEqual(expr.test(request), true);
+    }
+  );
+
+  await t.test(
+    "Colon-form header matcher rejects a non-matching value",
+    () => {
+      const expr = HTTPExpression(["GET /admin [Authorization: Bearer *]"]);
+      const request = new Request("http://localhost/admin", {
+        method: "GET",
+        headers: { Authorization: "Basic dXNlcjpwYXNz" },
+      });
+      assert.strictEqual(expr.test(request), false);
+    }
+  );
+
+  await t.test(
+    "Starts-with operator form [Authorization^=Bearer] keeps working alongside the colon form",
+    () => {
+      const expr = HTTPExpression(["GET /admin [Authorization^=Bearer]"]);
+      const matching = new Request("http://localhost/admin", {
+        method: "GET",
+        headers: { Authorization: "Bearer token123" },
+      });
+      const nonMatching = new Request("http://localhost/admin", {
+        method: "GET",
+        headers: { Authorization: "Basic dXNlcjpwYXNz" },
+      });
+      assert.strictEqual(expr.test(matching), true);
+      assert.strictEqual(expr.test(nonMatching), false);
+    }
+  );
 });
