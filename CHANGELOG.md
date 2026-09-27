@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.0.3] - 2026-09-26
+
+### Fixed
+
+- 🐛 **Types**: `RouterExtension.endpoint` (added by the `#9` fix) was
+  declared to return `Router` directly, i.e. callable only through
+  `Route`'s `(request: Request) => Response` signature. But at runtime
+  (and per the README's own documented examples) `router.endpoint` is
+  curried: the first tagged-template call defines the match pattern
+  (method/path/headers), and the *second* call — on the value the first
+  call returns — is either another tagged template supplying a raw HTTP
+  response literal (e.g.
+  `` router.endpoint`GET /x`` `HTTP/1.1 200 OK\n\n...`` ``) or a plain
+  handler function (`(request) => Response`), both registering the route
+  and returning the same `Router`. The old declaration didn't model this
+  curried, dual-mode second call at all, forcing consumers to fall back to
+  `@ts-expect-error`/`any`. Added `RouterEndpointResponder`, a callable
+  type with two overload signatures (tagged-template and single-handler),
+  and changed `RouterExtension.endpoint`'s return type from `Router` to
+  `RouterEndpointResponder`. Extended `test/types/fixture.ts` with both
+  curried forms (verified to fail to type-check against the pre-fix
+  declaration, and to pass cleanly against the fix) so a regression here
+  is caught by `npm test`/`npm run typecheck` instead of relying on
+  someone eyeballing `types.d.ts`
+  ([#11](https://github.com/johnhenry/letterpress/issues/11))
+
 ## [0.0.2] - 2026-09-26
 
 ### Fixed

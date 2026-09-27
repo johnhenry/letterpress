@@ -1,8 +1,8 @@
 /**
- * Type-only regression fixture for letterpress #9.
+ * Type-only regression fixture for letterpress #9 and #11.
  *
  * Not executed -- test/types.test.mjs spawns `tsc --noEmit` over this file
- * (via the root tsconfig.json). It exists to catch two regressions
+ * (via the root tsconfig.json). It exists to catch regressions
  * automatically instead of relying on someone eyeballing types.d.ts/fs.d.ts:
  *
  *  1. Importing "@johnhenry/letterpress" (and its "/fs" subpath) by their
@@ -19,6 +19,14 @@
  *     `import { createRouter } from '@johnhenry/letterpress'` type-checked
  *     the module specifier but `createRouter` itself was still `any`/
  *     missing (TS2305 "has no exported member").
+ *  3. `RouterExtension.endpoint`'s declared type didn't model that it's
+ *     curried at runtime (#11): the first tagged-template call returns a
+ *     responder that must be called a *second* time, either as another
+ *     tagged template (a raw HTTP response literal) or with a single
+ *     handler function, both returning `Router`. Before the fix, the first
+ *     call's return type was `Router` itself (callable only via `Route`'s
+ *     `(request: Request) => Response` signature), so both curried forms
+ *     below failed to type-check.
  */
 import {
   createRouter,
@@ -36,6 +44,27 @@ import { createFSRouter } from "@johnhenry/letterpress/fs";
 const router = createRouter({ baseUrl: "http://localhost" });
 const extended = router.endpoint`GET /ping`;
 void extended;
+
+// `.endpoint` is curried (letterpress #11): the first tagged-template call
+// (above) defines the match pattern and returns a responder that must be
+// called a *second* time, either as another tagged template (a raw HTTP
+// response literal) or with a single handler function -- both forms
+// register the route and return the same Router. Neither form below should
+// require @ts-expect-error/@ts-ignore.
+const routerAfterTemplateResponse = router.endpoint`GET /protected [Authorization: Bearer *]`
+`HTTP/1.1 200 OK
+Content-Type: text/plain
+
+This is a protected resource
+`;
+const routerAfterHandlerResponse = router.endpoint`GET /api/data`(
+  async (request: Request) => {
+    void request;
+    return new Response("ok");
+  }
+);
+void routerAfterTemplateResponse;
+void routerAfterHandlerResponse;
 
 async function checkRouter() {
   const response = await router(new Request("http://localhost/ping"));
