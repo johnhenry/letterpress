@@ -1,12 +1,18 @@
 {
   "name": "@johnhenry/letterpress",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A tagged-template-string HTTP routing library for defining and matching request handlers with plain JavaScript syntax.",
   "main": "index.mjs",
   "types": "types.d.ts",
   "exports": {
-    ".": "./index.mjs",
-    "./fs": "./fs-router.mjs",
+    ".": {
+      "types": "./types.d.ts",
+      "default": "./index.mjs"
+    },
+    "./fs": {
+      "types": "./fs.d.ts",
+      "default": "./fs-router.mjs"
+    },
     "./package.json": "./package.json",
     "./*": "./*"
   },
@@ -23,6 +29,7 @@
   },
   "scripts": {
     "test": "node --test test/index.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "demo:server": "node demo/server.mjs",
     "demo:client": "node demo/client.mjs"
   },
@@ -45,7 +52,8 @@
     "node": ">=26.0.0"
   },
   "devDependencies": {
-    "@johnhenry/leserve": "^0.0.0"
+    "@johnhenry/leserve": "^0.0.0",
+    "typescript": "^7.0.0"
   },
   "dependencies": {
     "theres-waldo": "^0.0.0"

@@ -83,3 +83,88 @@ export type HeaderMatchOptions = {
 
 export type InlineParam = (options: InlineParamOptions) => string;
 export type HeaderMatch = (options: HeaderMatchOptions) => string;
+
+// Configuration options for createRequest
+export type CreateRequestInit = {
+  baseUrl?: string;
+  setRetroactiveHeaders?: boolean;
+};
+
+// Tagged-template function returned by createRequest(), builds a Request
+// from an HTTP-request-shaped template literal (request line, headers,
+// blank line, body).
+export type CreateRequestTag = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => Promise<Request>;
+
+// Function to create a createRequest tagged-template function
+export type CreateRequest = (init?: CreateRequestInit) => CreateRequestTag;
+
+// createResponse is itself a tagged-template function (not a factory that
+// returns one): it builds a Response directly from an
+// HTTP-response-shaped template literal.
+export type CreateResponse = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => Response | Promise<Response>;
+
+// Result of deconstruct(): the raw pieces of a tagged template call.
+export type DeconstructResult = {
+  strings: string[];
+  substitutions: any[];
+  raw: readonly string[];
+};
+
+// deconstruct: pulls a tagged template call apart into its strings/
+// substitutions/raw pieces without any further processing.
+export type Deconstruct = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => DeconstructResult;
+
+// cook: re-assembles a tagged template call's strings/substitutions back
+// into a single string (the "cooked" value), per
+// https://2ality.com/2016/11/computing-tag-functions.html
+export type Cook = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => string;
+
+// Result of matching an HTTPExpression against a Request: the named path
+// parameters plus the matched method and the request's headers.
+export type HTTPExpressionMatch = {
+  [param: string]: string;
+} & {
+  method: string;
+  headers: Headers;
+};
+
+// The tagged-template matcher object returned by HTTPExpression().
+export type HTTPExpressionMatcher = {
+  test(request: Request): boolean;
+  exec(request: Request): HTTPExpressionMatch | null;
+};
+
+// HTTPExpression: a tagged-template function that builds a request
+// matcher (method + path pattern + optional header matchers) usable via
+// `.test(request)` / `.exec(request)`.
+export type HTTPExpressionFn = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => HTTPExpressionMatcher;
+
+// Value declarations for the actual named exports of index.mjs (and the
+// utility/index.mjs re-exports it pulls in). An `exports` map with no
+// `types` condition makes TypeScript ignore the legacy top-level `types`
+// field entirely under Bundler/Node16/NodeNext resolution, and even once
+// that's fixed (see package.json's `exports["."].types`), aliases alone
+// (above) don't type the values a consumer actually imports -- see
+// https://github.com/johnhenry/letterpress/issues/9.
+export declare const createRouter: CreateRouter;
+export declare const createRoute: CreateRoute;
+export declare const createRequest: CreateRequest;
+export declare const createResponse: CreateResponse;
+export declare const deconstruct: Deconstruct;
+export declare const cook: Cook;
+export declare const HTTPExpression: HTTPExpressionFn;
