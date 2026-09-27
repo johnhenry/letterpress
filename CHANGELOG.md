@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.0.2] - 2026-09-26
+
+### Fixed
+
+- 🐛 **Types**: `package.json` declared a legacy top-level `"types":
+  "types.d.ts"`, but the `exports` map had no `types` condition. With an
+  `exports` map present, TypeScript (Bundler/Node16/NodeNext resolution)
+  ignores the legacy top-level `types` field entirely, so
+  `` import { createRouter } from '@johnhenry/letterpress' `` was untyped
+  (`TS7016`). Even fixing that alone wasn't enough: `types.d.ts` declared
+  only type *aliases* (`Router`, `CreateRouter`, `CreateRoute`,
+  `RouterInit`, …) with no *value* declarations for the actual named
+  exports, so the import would still fail with `TS2305`. Added `types`
+  conditions to `exports["."]` (→ `types.d.ts`) and `exports["./fs"]`
+  (→ a new `fs.d.ts`, since `createFSRouter` isn't on the main barrel —
+  see the `#6`/`#7` fix above), and added value declarations for every
+  actual named export: `createRouter`, `createRoute`, `createRequest`,
+  `createResponse`, `deconstruct`, `cook`, `HTTPExpression` (from
+  `index.mjs`, including its `utility/index.mjs` re-exports), and
+  `createFSRouter` (from the `./fs` subpath). Added a `test/types/fixture.ts`
+  fixture that imports `@johnhenry/letterpress` and
+  `@johnhenry/letterpress/fs` by their published package names and
+  references every one of those exports, type-checked via `tsc --noEmit`
+  in `test/types.test.mjs` (now part of `npm test`), plus a standalone
+  `npm run typecheck` script, so a regression here fails the test suite
+  instead of only being caught by a consumer eyeballing the `.d.ts` files
+  ([#9](https://github.com/johnhenry/letterpress/issues/9))
+
 ## [0.0.1] - 2026-09-26
 
 ### Fixed

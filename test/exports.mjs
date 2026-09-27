@@ -49,8 +49,13 @@ test("package.json exposes a ./fs subpath export for createFSRouter", async () =
   const pkg = await import("../package.json", { with: { type: "json" } });
   const exportsMap = pkg.default.exports;
   assert.ok(exportsMap, "package.json should declare an exports map");
-  assert.strictEqual(exportsMap["./fs"], "./fs-router.mjs");
-  assert.strictEqual(exportsMap["."], "./index.mjs");
+  // Both conditional blocks carry a `types` condition (see issue #9) in
+  // addition to the `default` runtime target, so these are objects rather
+  // than bare strings now.
+  assert.strictEqual(exportsMap["./fs"].default, "./fs-router.mjs");
+  assert.strictEqual(exportsMap["./fs"].types, "./fs.d.ts");
+  assert.strictEqual(exportsMap["."].default, "./index.mjs");
+  assert.strictEqual(exportsMap["."].types, "./types.d.ts");
 });
 
 test("@johnhenry/letterpress/fs resolves createFSRouter via self-reference", async () => {
