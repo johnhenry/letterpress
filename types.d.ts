@@ -4,12 +4,27 @@ export type Route = (
   context?: Record<string, any>
 ) => Response | Promise<Response>;
 
+// The value returned by the *first* `router.endpoint` tagged-template call
+// (the method/path/header match pattern, e.g.
+// `` router.endpoint`GET /protected [Authorization: Bearer *]` ``). That
+// return value is itself curried: it must be called a *second* time,
+// either as another tagged template supplying a raw HTTP response literal
+// (e.g. `` `HTTP/1.1 200 OK\n\n...` ``, parsed the same way createResponse
+// parses one) or with a single plain handler function
+// (`(request: Request) => Response`), per the README's documented usage
+// and create-router.mjs's actual implementation. Both forms register the
+// route and return the same `Router` so calls can be chained.
+export type RouterEndpointResponder = {
+  (template: TemplateStringsArray, ...substitutions: any[]): Router;
+  (handler: Route): Router;
+};
+
 // Extension for the Router to add endpoints
 export type RouterExtension = {
   endpoint: (
     template: TemplateStringsArray,
     ...substitutions: any[]
-  ) => Router;
+  ) => RouterEndpointResponder;
 };
 
 // Combines Route and RouterExtension
