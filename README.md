@@ -148,6 +148,23 @@ Creates a new router instance.
 - `errorHandler`: Custom error handler function (optional)
 - `cache`: Caching options (optional)
 
+### `router.mount(prefix: string, subHandler: Mountable): Router`
+
+Delegates every request under `prefix` to `subHandler`, with the prefix
+stripped from the forwarded request's path — e.g. `router.mount("/api",
+apiRouter)` sends a request for `/api/users` to `apiRouter` as `/users`.
+`subHandler` may be a plain `(Request) => Response` function or an object
+exposing one as `.fetch` — a `Router` satisfies both, so one router can
+mount another:
+
+```javascript
+const api = createRouter();
+api.endpoint`GET /users``[]`;
+
+const router = createRouter();
+router.mount("/api", api); // GET /api/users -> api's GET /users
+```
+
 ### `createRoute(options?: RouteInit): Route`
 
 Creates a new route handler.
@@ -190,6 +207,47 @@ import { createFSRouter } from "@johnhenry/letterpress/fs";
 > point to keep that entry point bundler-friendly for browser use. Everything
 > else (`createRouter`, `createRoute`, `createRequest`, `createResponse`,
 > `HTTPExpression`) is pure and safe to bundle for the browser.
+
+### `createRewriter`
+
+Builds a request/response rewriter for target-URL/path rewriting -- e.g.
+rewriting an inbound path before it reaches a route, or rewriting a
+proxied response's headers/status on the way back out. Useful for proxy
+middleware (rewrite the target URL/path of a proxied request, adjust
+headers, force a status code) as well as plain routing (redirect old
+paths to new ones).
+
+```javascript
+import { createRewriter } from "@johnhenry/letterpress/rewrite";
+
+const rewriter = createRewriter([
+  {
+    match: { path: /^\/api\/v1\/(.*)/ },
+    action: { rewritePath: "/api/v2/$1" },
+  },
+]);
+
+// Wrap a handler: the handler receives the rewritten request, and its
+// response is run back through the rewriter before being returned.
+const handler = rewriter.middleware(async (request) => {
+  const url = new URL(request.url);
+  return new Response(`routed to ${url.pathname}`);
+});
+
+// Or call rewriteRequest/rewriteResponse directly, and manage rules with
+// addRule/removeRule/getRules.
+rewriter.addRule({ match: { path: "/teapot" }, action: { setStatus: 418 } });
+```
+
+> `createRewriter` is imported from the `@johnhenry/letterpress/rewrite`
+> subpath, not the main `@johnhenry/letterpress` barrel, mirroring how
+> `createFSRouter` is isolated on `@johnhenry/letterpress/fs` above.
+>
+> This existed in `leroute` (the package letterpress was renamed from --
+> see the provenance note near the top of this README) but was dropped
+> during that rename. It's ported here, discovered missing while porting a
+> downstream consumer (`prism`, a request inspector/proxy) that relies on
+> it for proxy-mode rewriting -- see CHANGELOG.md.
 
 ### `deconstruct`, `cook`
 
@@ -241,6 +299,13 @@ is designed to pair with a sibling package that does.
   `Route`-shaped function works too; `leserve` is the tested, documented
   pairing, not a hard dependency (it's a `devDependency` here, used only in
   the demo scripts).
+- **[`@johnhenry/prism`](https://github.com/johnhenry/prism)** -- a live
+  HTTP request inspector/proxy that uses `createRouter()` as its top-level
+  router. Porting it surfaced two real gaps left over from letterpress's
+  own rename from `leroute`: `router.mount()` (with the `ctx`-forwarding
+  its `mountPrefix` depends on) and `createRewriter`
+  (`@johnhenry/letterpress/rewrite`) -- both closed as part of that port,
+  see CHANGELOG.md.
 
 ## 🤝 Contributing
 

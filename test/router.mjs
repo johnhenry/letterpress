@@ -171,6 +171,87 @@ test("Router - Function handler", async () => {
   assert.equal(response.status, 200);
 });
 
+test("Router - mount delegates matching requests with the prefix stripped", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /users``sub: ${(_, { params }) => "users"}`;
+  router.mount("/api", sub);
+
+  const response = await router(new Request("http://example.com/api/users"));
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "sub: users");
+});
+
+test("Router - mount forwards mountPrefix to the sub-router's own handlers via ctx", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /users`((_, ctx) => new Response(ctx.mountPrefix));
+  router.mount("/api", sub);
+
+  const response = await router(new Request("http://example.com/api/users"));
+  assert.equal(await response.text(), "/api");
+});
+
+test("Router - a caller-supplied ctx reaches matched handlers and defaultHandler alike", async () => {
+  const router = createRouter({
+    defaultHandler: (_, ctx) => new Response(`default:${ctx.tag}`),
+  });
+  router.endpoint`GET /hit`((_, ctx) => new Response(`hit:${ctx.tag}`));
+
+  const hit = await router(new Request("http://example.com/hit"), { tag: "x" });
+  assert.equal(await hit.text(), "hit:x");
+
+  const miss = await router(new Request("http://example.com/miss"), { tag: "y" });
+  assert.equal(await miss.text(), "default:y");
+});
+
+test("Router - mount matches the bare prefix itself (no trailing segment)", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /``root`;
+  router.mount("/api", sub);
+
+  const response = await router(new Request("http://example.com/api"));
+  assert.equal(await response.text(), "root");
+});
+
+test("Router - mount falls through to the outer router's 404 for non-matching paths", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /users``sub: users`;
+  router.mount("/api", sub);
+
+  const response = await router(new Request("http://example.com/other"));
+  assert.equal(response.status, 404);
+});
+
+test("Router - mount accepts an object exposing .fetch (so a router can mount another router)", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /ping``pong`;
+  // `sub` is itself callable (Route & RouterExtension), but this exercises
+  // the `.fetch` branch explicitly by wrapping it in a plain object.
+  router.mount("/api", { fetch: sub });
+
+  const response = await router(new Request("http://example.com/api/ping"));
+  assert.equal(await response.text(), "pong");
+});
+
+test("Router - mount preserves query strings and method/body on the forwarded request", async () => {
+  const router = createRouter();
+  const sub = createRouter();
+  sub.endpoint`GET /search`(async (request) => {
+    const url = new URL(request.url);
+    return new Response(url.search);
+  });
+  router.mount("/api", sub);
+
+  const response = await router(
+    new Request("http://example.com/api/search?q=hello")
+  );
+  assert.equal(await response.text(), "?q=hello");
+});
+
 // Commented out tests
 /*
 test("Router - InlineParam", async () => {

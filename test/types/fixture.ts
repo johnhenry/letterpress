@@ -38,6 +38,7 @@ import {
   HTTPExpression,
 } from "@johnhenry/letterpress";
 import { createFSRouter } from "@johnhenry/letterpress/fs";
+import { createRewriter } from "@johnhenry/letterpress/rewrite";
 
 // createRouter: a Router is a Route (request, context?) => Response, plus
 // an `.endpoint` tagged-template extension that registers routes.
@@ -136,3 +137,36 @@ async function checkFsRouter() {
   return response === null || response instanceof Response;
 }
 void checkFsRouter;
+
+// createRewriter: only reachable via the "/rewrite" subpath (not the main
+// barrel), mirroring createFSRouter's "/fs" subpath precedent. Ported from
+// leroute -- see rewrite.mjs's top-of-file comment and CHANGELOG.md.
+const rewriter = createRewriter([
+  {
+    match: { path: /^\/old\/(.*)/ },
+    action: { rewritePath: "/new/$1", setHeader: { "x-rewritten": "true" } },
+  },
+]);
+const rewrittenRequest: Request = rewriter.rewriteRequest(
+  new Request("http://localhost/old/stuff")
+);
+void rewrittenRequest;
+const rewrittenResponse: Response = rewriter.rewriteResponse(
+  new Response("ok"),
+  new Request("http://localhost/old/stuff")
+);
+void rewrittenResponse;
+rewriter.addRule({ match: { path: "/teapot" }, action: { setStatus: 418 } });
+rewriter.removeRule(0);
+const ruleSnapshots = rewriter.getRules();
+const firstRuleIndex: number = ruleSnapshots[0]?.index ?? -1;
+void firstRuleIndex;
+const wrapped = rewriter.middleware(async (request: Request) => {
+  void request;
+  return new Response("ok");
+});
+async function checkRewriterMiddleware() {
+  const response = await wrapped(new Request("http://localhost/old/stuff"), {});
+  return response instanceof Response;
+}
+void checkRewriterMiddleware;

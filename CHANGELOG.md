@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [Unreleased] - 2026-09-27
+
+### Added
+
+- ✨ **`createRewriter`**: `leroute` (the package letterpress was renamed
+  from -- see the README's provenance note) had a `createRewriter` export
+  (`leroute/rewrite`) for request/response rewriting: rewriting an inbound
+  request's target path/headers before it reaches a handler, and rewriting
+  a handler's response headers/status on the way back out. This never got
+  carried over during the leroute -> `@johnhenry/letterpress` rename --
+  it simply wasn't in the initial `@johnhenry/letterpress` source, a gap
+  in that migration rather than an intentional removal. It was discovered
+  while porting a downstream consumer, `prism` (a live HTTP request
+  inspector/proxy), whose proxy mode depends on it for rewriting proxied
+  requests/responses. Ported unchanged in behavior as `rewrite.mjs`
+  (`createRewriter`, plus `rewriteRequest`/`rewriteResponse`/`addRule`/
+  `removeRule`/`getRules`/`middleware`), exposed via a dedicated
+  `@johnhenry/letterpress/rewrite` subpath -- mirroring how
+  `createFSRouter` is isolated on `@johnhenry/letterpress/fs` rather than
+  the main barrel -- with its own `rewrite.d.ts` types wired into
+  `package.json`'s `exports` map and `tsconfig.json`. Tests ported from
+  leroute's `test/rewrite.mjs` into `test/rewrite.mjs`, plus new
+  `./rewrite` subpath-export regression tests in `test/exports.mjs` and
+  `test/types/fixture.ts` coverage, following the same pattern the `./fs`
+  subpath already established.
+
+- ✨ **`router.mount(prefix, subHandler)`**: another `leroute` capability
+  (`create-lerouter.mjs`'s `router.mount`) dropped during the same rename,
+  found via the same `prism` port -- prism's own top-level router uses it
+  to mount its dashboard sub-router under `/inspect`. Delegates every
+  request under `prefix` to `subHandler` with the prefix stripped from the
+  forwarded request's path; `subHandler` may be a plain `(Request) =>
+  Response` function or an object exposing one as `.fetch`, so a `Router`
+  can mount another `Router`. Ported onto the main barrel (`create-router.mjs`,
+  right alongside `router.endpoint`, not an isolated subpath like `rewrite`
+  -- unlike `rewrite`/`fs`, `mount` is core routing behavior every router
+  needs, not an optional extra), dropping only the old implementation's
+  now-obsolete `middleware` and `request.raw` preservation (the current
+  `createRouter` doesn't have either concept). New `Mountable` type in
+  `types.d.ts`; seven new tests in `test/router.mjs` covering delegation,
+  the bare-prefix-with-no-trailing-segment case, 404 fallthrough for
+  non-matching paths, the `.fetch`-object form, query-string/method
+  preservation on the forwarded request, and ctx forwarding (below).
+
+- ✨ **The router's own dispatch now accepts an optional second `ctx`
+  argument** (`router(request, ctx?)`), merged underneath `init` and the
+  matched route's own params so a route's params can't be shadowed by it,
+  and forwarded to `defaultHandler` too. This was also present in `leroute`
+  (`router(request, ctx = {})`) and dropped during the rename; brought back
+  specifically so `mount()` can hand a mounted sub-router its `mountPrefix`
+  (used by `prism` to reconstruct the full request path for display in its
+  captured-request feed, purely cosmetic but a real fidelity gap otherwise)
+  -- caught by testing `mount()` end-to-end against `prism` itself, not by
+  a direct comparison against the old source this time. Existing single-arg
+  `router(request)` callers are unaffected (`ctx` defaults to `{}`).
+
 ## [0.0.3] - 2026-09-26
 
 ### Fixed

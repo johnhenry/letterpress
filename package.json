@@ -13,6 +13,10 @@
       "types": "./fs.d.ts",
       "default": "./fs-router.mjs"
     },
+    "./rewrite": {
+      "types": "./rewrite.d.ts",
+      "default": "./rewrite.mjs"
+    },
     "./package.json": "./package.json",
     "./*": "./*"
   },
