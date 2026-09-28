@@ -67,3 +67,31 @@ test("@johnhenry/letterpress (self-reference) does not carry createFSRouter", as
   const barrel = await import("@johnhenry/letterpress");
   assert.strictEqual("createFSRouter" in barrel, false);
 });
+
+// Regression tests closing the leroute -> @johnhenry/letterpress migration
+// gap: `createRewriter` existed in leroute (see rewrite.mjs's top-of-file
+// comment and CHANGELOG.md) but was never carried over during the rename.
+// It's exposed the same way createFSRouter is -- a dedicated subpath, not
+// the main barrel -- for consistency with that existing precedent.
+
+test("createRewriter is exported from rewrite.mjs directly", async () => {
+  const rewriteModule = await import("../rewrite.mjs");
+  assert.strictEqual(typeof rewriteModule.createRewriter, "function");
+});
+
+test("package.json exposes a ./rewrite subpath export for createRewriter", async () => {
+  const pkg = await import("../package.json", { with: { type: "json" } });
+  const exportsMap = pkg.default.exports;
+  assert.strictEqual(exportsMap["./rewrite"].default, "./rewrite.mjs");
+  assert.strictEqual(exportsMap["./rewrite"].types, "./rewrite.d.ts");
+});
+
+test("@johnhenry/letterpress/rewrite resolves createRewriter via self-reference", async () => {
+  const rewriteSubpath = await import("@johnhenry/letterpress/rewrite");
+  assert.strictEqual(typeof rewriteSubpath.createRewriter, "function");
+});
+
+test("@johnhenry/letterpress (self-reference) does not carry createRewriter", async () => {
+  const barrel = await import("@johnhenry/letterpress");
+  assert.strictEqual("createRewriter" in barrel, false);
+});

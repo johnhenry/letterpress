@@ -19,12 +19,18 @@ export type RouterEndpointResponder = {
   (handler: Route): Router;
 };
 
+// A handler mountable under a Router prefix: a plain (Request) => Response
+// function, or an object exposing one as `.fetch` (so a Router can mount
+// another Router).
+export type Mountable = Route | { fetch: Route };
+
 // Extension for the Router to add endpoints
 export type RouterExtension = {
   endpoint: (
     template: TemplateStringsArray,
     ...substitutions: any[]
   ) => RouterEndpointResponder;
+  mount: (prefix: string, subHandler: Mountable) => Router;
 };
 
 // Combines Route and RouterExtension
