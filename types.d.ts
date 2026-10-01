@@ -130,6 +130,42 @@ export type CreateResponse = (
   ...substitutions: any[]
 ) => Response | Promise<Response>;
 
+// Configuration/sugar for tagRequest(). Unlike CreateRequestInit, these
+// fields only ever fill in what raw HTTP text can't express -- method,
+// URL, status, and body always come from the parsed template itself, not
+// from defaults. `host` is sugar for headers.host; providing both throws.
+export type TagRequestDefaults = {
+  headers?: HeadersInit | Headers;
+  host?: string;
+  baseUrl?: string;
+  redirect?: RequestRedirect;
+  credentials?: RequestCredentials;
+  mode?: RequestMode;
+  referrer?: string;
+  referrerPolicy?: ReferrerPolicy;
+  signal?: AbortSignal;
+};
+
+// Tagged-template function returned by tagRequest(): a strict, from-scratch
+// parser of raw HTTP-request text (see README's "which one do I want?"
+// note comparing this to createRequest). Substitutions are spliced in
+// verbatim -- never re-scanned for "\n"/":" -- and a binary-typed
+// substitution (Blob/Uint8Array/ArrayBuffer/ReadableStream/FormData/
+// URLSearchParams) must be the sole content of the body.
+export type TagRequestTag = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => Promise<Request>;
+
+export type TagRequest = (defaults?: TagRequestDefaults) => TagRequestTag;
+
+// tagResponse is itself the tagged-template function (uncurried, like
+// createResponse) -- there is no defaults-currying form in this version.
+export type TagResponse = (
+  template: TemplateStringsArray,
+  ...substitutions: any[]
+) => Promise<Response>;
+
 // Result of deconstruct(): the raw pieces of a tagged template call.
 export type DeconstructResult = {
   strings: string[];
@@ -186,6 +222,8 @@ export declare const createRouter: CreateRouter;
 export declare const createRoute: CreateRoute;
 export declare const createRequest: CreateRequest;
 export declare const createResponse: CreateResponse;
+export declare const tagRequest: TagRequest;
+export declare const tagResponse: TagResponse;
 export declare const deconstruct: Deconstruct;
 export declare const cook: Cook;
 export declare const HTTPExpression: HTTPExpressionFn;

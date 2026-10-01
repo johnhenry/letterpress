@@ -1,6 +1,6 @@
 {
   "name": "@johnhenry/letterpress",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A tagged-template-string HTTP routing library for defining and matching request handlers with plain JavaScript syntax.",
   "main": "index.mjs",
   "types": "types.d.ts",

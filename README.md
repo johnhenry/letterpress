@@ -188,9 +188,27 @@ expr.test(request); // boolean — does this request match?
 expr.exec(request); // matched params (plus method/headers), or null
 ```
 
-### `createRequest`, `createResponse`
+### `createRequest`, `createResponse`, `tagRequest`, `tagResponse`
 
-Tagged-template functions for building `Request`/`Response` objects from raw HTTP-message-shaped template literals. See [api.md](./api.md) for details.
+Four tagged-template functions for building `Request`/`Response` objects
+from raw HTTP-message-shaped template literals -- two pairs with a
+deliberately different purpose, not two ways to do the same thing:
+
+| | `createRequest` / `createResponse` | `tagRequest` / `tagResponse` |
+|---|---|---|
+| Purpose | convenient, forgiving builder | strict raw-HTTP-text parser |
+| Request/status line | optional / defaulted | **required** -- throws without one |
+| Header value containing `": "` | truncated | parses correctly |
+| Repeated header name (e.g. `Set-Cookie`) | both kept | both kept |
+| Interpolated value containing `\n`/`:` | re-tokenized as syntax | spliced in verbatim, never re-scanned |
+| Function-valued interpolation | not supported | not supported (use `createRoute` for that) |
+| Binary substitution (`Blob`/stream/etc.) | becomes the body | becomes the body, but **must be the sole body content** -- throws if combined with other text |
+
+Reach for `tagRequest`/`tagResponse` when a template literal needs to
+behave exactly like the HTTP text it looks like (tests, fixtures,
+hand-authored wire-format examples); reach for `createRequest`/
+`createResponse` for everyday convenience where partial specification is
+fine. See [api.md](./api.md) for the full examples of both.
 
 ### `createFSRouter`
 
@@ -206,7 +224,8 @@ import { createFSRouter } from "@johnhenry/letterpress/fs";
 > and the `theres-waldo` dependency, so it's kept out of the main entry
 > point to keep that entry point bundler-friendly for browser use. Everything
 > else (`createRouter`, `createRoute`, `createRequest`, `createResponse`,
-> `HTTPExpression`) is pure and safe to bundle for the browser.
+> `tagRequest`, `tagResponse`, `HTTPExpression`) is pure and safe to bundle
+> for the browser.
 
 ### `createRewriter`
 

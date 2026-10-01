@@ -6,6 +6,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.2.0] - 2026-09-30
+
+### Added
+
+- ✨ **`tagRequest`/`tagResponse`** (#8): a strict, from-scratch pair of
+  tagged-template functions for building `Request`/`Response` objects
+  directly from raw HTTP-message text, coexisting with the existing
+  `createRequest`/`createResponse` rather than replacing them -- see the
+  README's new comparison table under `createRequest`, `createResponse`,
+  `tagRequest`, `tagResponse`. The request/status line is required (no
+  implicit default the way `createRoute`'s `init` object provides one);
+  `defaults` only ever contributes headers (plus a `host` sugar key and a
+  few `Request`-only fields raw text can't express) -- method, URL,
+  status, and body always come from the parsed template text. A binary
+  substitution (`Blob`/`Uint8Array`/`ArrayBuffer`/`ReadableStream`/
+  `FormData`/`URLSearchParams`) becomes the real body, but must be the
+  sole content of the body zone -- combining it with other text throws,
+  rather than silently corrupting or discarding either side.
+- New shared internal parser, `utility/parse-http-text.mjs`: scans only
+  the template's literal `strings` pieces for structure (start line,
+  header lines, the blank line that ends them); a substitution's value is
+  spliced in verbatim and never re-scanned for `"\n"`/`":"`. This is the
+  single most important correctness property of the new parser -- see
+  below for how it also fixed two real, pre-existing bugs once
+  `create-route.mjs` was backported onto it.
+
+### Fixed
+
+- 🐛 **`createRoute`/`createResponse`/`createRouter` silently overwrote a
+  repeated header name instead of accumulating it** -- `headers.set()`
+  was called for every header line found while parsing a template, so
+  e.g. two `Set-Cookie:` lines in a template (or an `init.headers` value
+  plus a same-named template header) resulted in only the last one
+  surviving. Now: the first occurrence of a header name overwrites
+  whatever was already set (from `init`/a previous occurrence), and a
+  second-or-later occurrence of the *same name within the template*
+  accumulates via `.append()` instead. **This is a real, user-visible
+  behavior change** for anyone relying on repeated headers being silently
+  collapsed to the last one -- if that was intentional, call
+  `headers.delete(name)` before setting it again via `context.setHeader`.
+  Fixed in the same change as the next item, both via `create-route.mjs`
+  now delegating its structural parsing to `utility/parse-http-text.mjs`
+  (function-valued substitutions are still resolved by `create-route.mjs`
+  itself in a pre-pass, preserving their side-effect/early-return
+  behavior exactly).
+- 🐛 **A substituted value containing `"\n"` or `":"` could be
+  reinterpreted as new HTTP syntax** in `createRoute`/`createResponse`/
+  `createRouter` templates -- a stringified substitution was re-fed
+  through the same line tokenizer used for the template's own literal
+  text, so e.g. `` `X-Note: ${value}` `` could have `value` silently
+  start a new header line or end the header section early if it happened
+  to contain those characters. Regression tests added directly against
+  `createRoute` (not just via `tagRequest`/`tagResponse`) in
+  `test/route.mjs`.
+- Removed dead code in `create-route.mjs`: a `JSON.parse`-based
+  Content-Type auto-sniff that could never actually run, since
+  `Content-Type` was always already set to `text/html` by the
+  unconditional check immediately before it. No behavior change --
+  `Content-Type` already always ended up `text/html` for a JSON-shaped
+  body with no explicit header, both before and after this cleanup.
+
+### Can I rely on the old header-overwrite behavior? No.
+
+If any consumer depended on a repeated header name collapsing to the last
+value written (rather than accumulating), that behavior is gone as of
+this version. This was never documented as intentional -- it was an
+unreviewed side effect of `headers.set()` being called unconditionally --
+and the new behavior (both values survive, matching how real HTTP
+Set-Cookie accumulation works and how `createRequest`'s own header parser
+already behaved) is the one `create-route.mjs` was always meant to have.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added
