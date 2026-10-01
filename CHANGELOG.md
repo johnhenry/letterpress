@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.2.1] - 2026-10-01
+
+### Fixed
+
+- 🐛 **A later function substitution's `context.setHeader()` stopped
+  overwriting an earlier template header line**, reversing `0.2.0`'s own
+  create-route.mjs backport. That backport resolved every function-valued
+  substitution in a pre-pass, before any template header line was
+  applied -- so a template header line always won, regardless of whether
+  a function substitution calling `setHeader` for the same name appeared
+  *after* it (originally, whichever ran later always won, matching plain
+  left-to-right template evaluation). `utility/parse-http-text.mjs` now
+  takes a `resolveSubstitution` callback invoked at the exact point the
+  scan reaches each substitution, and an `onHeaderLine` callback invoked
+  immediately per header line, instead of batching either until the whole
+  parse finishes -- restoring the original ordering while still sharing
+  one parser implementation. `tagRequest`/`tagResponse` are unaffected
+  (they have no function-substitution/side-effect concept to reorder).
+  Found by deliberately re-testing `0.2.0`'s backport against the
+  pre-refactor code's actual behavior, not by inspection.
+- A function-valued substitution returning a `Headers` object is now
+  merged directly, like a directly-substituted `Headers` object already
+  was -- previously it fell through to `.toString()`, producing the
+  literal text `"[object Headers]"` in the response body and silently
+  dropping the headers. Not separately tested before (no prior test
+  covered this combination); noted here since it's a user-visible
+  behavior difference from `0.2.0` and earlier, not just a `0.2.0` revert.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added
