@@ -45,7 +45,7 @@ export const tagRequest = (defaults = {}) => {
   }
 
   return async function (strings, ...substitutions) {
-    const { startLine, headerEntries, body } = parseHttpText(
+    const { startLine, headerEntries, body } = await parseHttpText(
       strings,
       substitutions
     );

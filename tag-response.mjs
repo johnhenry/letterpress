@@ -26,7 +26,7 @@ const mergeHeaderEntries = (headerEntries) => {
 };
 
 export const tagResponse = async function (strings, ...substitutions) {
-  const { startLine, headerEntries, body } = parseHttpText(
+  const { startLine, headerEntries, body } = await parseHttpText(
     strings,
     substitutions
   );

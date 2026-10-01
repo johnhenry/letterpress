@@ -2,24 +2,6 @@ import { parseHttpText } from "./utility/parse-http-text.mjs";
 
 const DEFAULT_REQUEST = () => new Request("http://.");
 
-// Same rule tag-request.mjs/tag-response.mjs use: the first occurrence of
-// a header name overwrites whatever was already set (e.g. from `init`),
-// a second-or-later occurrence of the *same name* accumulates instead of
-// overwriting it. Fixes the Set-Cookie-overwrite bug this file used to
-// have (headers.set() for every line, unconditionally).
-const mergeHeaderEntries = (headers, headerEntries) => {
-  const seen = new Set();
-  for (const { name, value } of headerEntries) {
-    const key = name.toLowerCase();
-    if (seen.has(key)) {
-      headers.append(name, value);
-    } else {
-      headers.set(name, value);
-      seen.add(key);
-    }
-  }
-};
-
 export const createRoute = (initOrMiddleware) => {
   const getInit =
     typeof initOrMiddleware === "function"
@@ -49,28 +31,40 @@ export const createRoute = (initOrMiddleware) => {
         ...additionalContext,
       };
 
-      // Resolve every function-valued substitution up front -- this is
-      // create-route's one feature the shared parser doesn't (and
-      // shouldn't) know about: a substitution can run arbitrary async
-      // work and mutate `context` (headers/status) as a side effect, in
-      // addition to contributing a value to the template. `null`/
-      // `undefined` are preserved (parseHttpText already treats either as
-      // "contributes nothing," matching ordinary JS template semantics).
-      const resolvedSubstitutions = [];
-      for (const sub of substitutions) {
-        resolvedSubstitutions.push(
-          typeof sub === "function" ? await sub(request, context) : sub
-        );
-      }
-
-      const { startLine, headerEntries, body } = parseHttpText(
-        strings,
-        resolvedSubstitutions,
-        {
-          isStartLine: (line) => line.startsWith("HTTP/"),
-          trimBodyLines: true,
+      // Same rule tag-request.mjs/tag-response.mjs use: the first
+      // occurrence of a header name overwrites whatever was already set
+      // (e.g. from `init`), a second-or-later occurrence of the *same
+      // name* accumulates instead of overwriting it. Applied immediately
+      // per header line (via onHeaderLine below), not batched until the
+      // whole parse finishes -- a *later* function substitution's
+      // context.setHeader() call must still be able to overwrite an
+      // earlier template header line, exactly like the original
+      // chunk-by-chunk implementation did.
+      const seenHeaderNames = new Set();
+      const applyHeaderLine = (name, value) => {
+        const key = name.toLowerCase();
+        if (seenHeaderNames.has(key)) {
+          headers.append(name, value);
+        } else {
+          headers.set(name, value);
+          seenHeaderNames.add(key);
         }
-      );
+      };
+
+      const { startLine, body } = await parseHttpText(strings, substitutions, {
+        isStartLine: (line) => line.startsWith("HTTP/"),
+        trimBodyLines: true,
+        onHeaderLine: applyHeaderLine,
+        // Function-valued substitutions are create-route's one feature
+        // the shared parser doesn't (and shouldn't) know about on its
+        // own: a substitution can run arbitrary async work and mutate
+        // `context` (headers/status) as a side effect, in addition to
+        // contributing a value to the template. Resolved inline, at the
+        // exact point the scan reaches it, so its side effects land in
+        // the same left-to-right order as the template text itself.
+        resolveSubstitution: (sub) =>
+          typeof sub === "function" ? sub(request, context) : sub,
+      });
 
       if (startLine !== null) {
         const [, statusCodeText, ...statusTextParts] = startLine.split(" ");
@@ -80,8 +74,6 @@ export const createRoute = (initOrMiddleware) => {
           statusText = statusTextParts.join(" ");
         }
       }
-
-      mergeHeaderEntries(headers, headerEntries);
 
       let responseBody = body;
       const isBinaryBody = typeof responseBody !== "string";

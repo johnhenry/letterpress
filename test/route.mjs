@@ -124,6 +124,27 @@ ${"body text"}`;
     assert.strictEqual(await response.text(), "body text");
   });
 
+  it("should apply a later function substitution's setHeader() after an earlier template header line (ordering regression)", async () => {
+    // Regression test: the first version of the create-route.mjs/
+    // parse-http-text.mjs backport resolved every function-valued
+    // substitution in a pre-pass, before any template header line was
+    // parsed -- so a context.setHeader() call from a function appearing
+    // *later* in the template always lost to an earlier template header
+    // line, reversing the original left-to-right "last write wins"
+    // ordering. Substitutions must now be resolved (and header lines
+    // applied) at the exact point the scan reaches them.
+    const route = createRoute()`HTTP/1.1 200 OK
+X-Foo: from-template-line
+Content-Type: text/plain
+
+${async (_, { response }) => {
+  response.headers.set("X-Foo", "from-function-side-effect");
+  return "body";
+}}`;
+    const response = await route(new Request("https://example.com"));
+    assert.strictEqual(response.headers.get("X-Foo"), "from-function-side-effect");
+  });
+
   it("should handle streaming responses", async () => {
     const route = createRoute({ streaming: true })`
       ${async (_, { response }) => {

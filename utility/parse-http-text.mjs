@@ -39,8 +39,27 @@ const BINARY_BODY_TYPES = (value) =>
 // this -- body content there is literal, preserved exactly as written,
 // since trimming could corrupt meaningful whitespace in a text body.
 // Defaults to false (the strict behavior); create-route.mjs passes true.
-export const parseHttpText = (strings, substitutions, options = {}) => {
-  const { isStartLine = () => true, trimBodyLines = false } = options;
+// options.resolveSubstitution(value, index): called (and awaited) for
+// each substitution at the exact point the scan reaches it -- not
+// pre-resolved up front -- so a caller like create-route.mjs can run a
+// function-valued substitution's side effects (context.setHeader, etc.)
+// in the same left-to-right order the original chunk-by-chunk processor
+// used. Defaults to the identity function.
+// options.onHeaderLine(name, value): called immediately as each header
+// line (or Headers-object substitution) is parsed, interleaved with
+// resolveSubstitution calls in the same left-to-right order -- lets
+// create-route.mjs apply a template header line to its live `headers`
+// object right away, so a *later* function substitution's
+// context.setHeader() call still overwrites it (matching the original
+// implementation's ordering), rather than only being visible once the
+// whole parse finishes.
+export const parseHttpText = async (strings, substitutions, options = {}) => {
+  const {
+    isStartLine = () => true,
+    trimBodyLines = false,
+    resolveSubstitution = (value) => value,
+    onHeaderLine = null,
+  } = options;
 
   const stringsArr = [...strings];
   stringsArr[0] = stringsArr[0].replace(/^[ \t\r\n]+/, "");
@@ -107,10 +126,10 @@ export const parseHttpText = (strings, substitutions, options = {}) => {
       } else {
         const colonIndex = lineBuffer.indexOf(":");
         if (colonIndex > 0) {
-          headerEntries.push({
-            name: lineBuffer.slice(0, colonIndex).trim(),
-            value: lineBuffer.slice(colonIndex + 1).trim(),
-          });
+          const name = lineBuffer.slice(0, colonIndex).trim();
+          const value = lineBuffer.slice(colonIndex + 1).trim();
+          headerEntries.push({ name, value });
+          if (onHeaderLine) onHeaderLine(name, value);
         }
       }
     }
@@ -131,9 +150,12 @@ export const parseHttpText = (strings, substitutions, options = {}) => {
     }
 
     if (i < substitutions.length) {
-      const sub = substitutions[i];
+      const sub = await resolveSubstitution(substitutions[i], i);
       if (sub instanceof Headers) {
-        for (const [name, value] of sub) headerEntries.push({ name, value });
+        for (const [name, value] of sub) {
+          headerEntries.push({ name, value });
+          if (onHeaderLine) onHeaderLine(name, value);
+        }
       } else if (zone !== "headers" && BINARY_BODY_TYPES(sub)) {
         if (pendingBinary) {
           throw new TypeError(
