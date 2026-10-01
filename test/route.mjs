@@ -87,6 +87,43 @@ describe("createRoute", () => {
     assert.strictEqual(await response.text(), "STREAMED");
   });
 
+  it("should accumulate repeated header names instead of overwriting (letterpress #8)", async () => {
+    // Regression test: headers.set() was called for every header line
+    // found while parsing the template, so a second Set-Cookie line
+    // silently overwrote the first instead of both surviving.
+    const route = createRoute()`HTTP/1.1 200 OK
+Set-Cookie: a=1
+Set-Cookie: b=2
+Content-Type: text/plain
+
+hello`;
+    const response = await route(new Request("https://example.com"));
+    const cookies = response.headers.getSetCookie
+      ? response.headers.getSetCookie()
+      : [...response.headers.entries()]
+          .filter(([key]) => key === "set-cookie")
+          .map(([, value]) => value);
+    assert.deepStrictEqual(cookies, ["a=1", "b=2"]);
+  });
+
+  it("should not reinterpret a substituted value as new header syntax (letterpress #8)", async () => {
+    // Regression test: a stringified substitution was re-fed through the
+    // same line tokenizer used for the template's own literal text, so a
+    // substitution containing "\n" or ":" could end the header section
+    // early or appear to start a new header line.
+    const route = createRoute()`HTTP/1.1 200 OK
+X-Note: ${"value: with: colons: inside"}
+Content-Type: text/plain
+
+${"body text"}`;
+    const response = await route(new Request("https://example.com"));
+    assert.strictEqual(
+      response.headers.get("X-Note"),
+      "value: with: colons: inside"
+    );
+    assert.strictEqual(await response.text(), "body text");
+  });
+
   it("should handle streaming responses", async () => {
     const route = createRoute({ streaming: true })`
       ${async (_, { response }) => {

@@ -33,6 +33,8 @@ import {
   createRoute,
   createRequest,
   createResponse,
+  tagRequest,
+  tagResponse,
   deconstruct,
   cook,
   HTTPExpression,
@@ -100,6 +102,24 @@ ok`;
   return response instanceof Response;
 }
 void checkResponse;
+
+// tagRequest: (defaults?) => tagged-template => Promise<Request>
+async function checkTagRequest() {
+  const request = await tagRequest({ host: "example.com" })`GET /path HTTP/1.1
+Accept: application/json`;
+  return request instanceof Request;
+}
+void checkTagRequest;
+
+// tagResponse: itself a tagged-template function => Promise<Response>
+async function checkTagResponse() {
+  const response = await tagResponse`HTTP/1.1 200 OK
+Content-Type: text/plain
+
+ok`;
+  return response instanceof Response;
+}
+void checkTagResponse;
 
 // deconstruct: tagged-template => { strings, substitutions, raw }
 const deconstructed = deconstruct`GET /${"foo"}`;

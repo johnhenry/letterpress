@@ -1,4 +1,24 @@
+import { parseHttpText } from "./utility/parse-http-text.mjs";
+
 const DEFAULT_REQUEST = () => new Request("http://.");
+
+// Same rule tag-request.mjs/tag-response.mjs use: the first occurrence of
+// a header name overwrites whatever was already set (e.g. from `init`),
+// a second-or-later occurrence of the *same name* accumulates instead of
+// overwriting it. Fixes the Set-Cookie-overwrite bug this file used to
+// have (headers.set() for every line, unconditionally).
+const mergeHeaderEntries = (headers, headerEntries) => {
+  const seen = new Set();
+  for (const { name, value } of headerEntries) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) {
+      headers.append(name, value);
+    } else {
+      headers.set(name, value);
+      seen.add(key);
+    }
+  }
+};
 
 export const createRoute = (initOrMiddleware) => {
   const getInit =
@@ -29,139 +49,56 @@ export const createRoute = (initOrMiddleware) => {
         ...additionalContext,
       };
 
-      const processInput = async () => {
-        let mode = "INITIAL";
-        let buffer = "";
-        let bodyContent = "";
-        let headerName = "";
-        let i = 0;
-        let j = 0;
-
-        const processChunk = (chunk) => {
-          buffer += chunk;
-          const lines = buffer.split("\n");
-
-          while (lines.length > 1) {
-            const line = lines.shift().trim();
-
-            switch (mode) {
-              case "INITIAL":
-                if (line.startsWith("HTTP/")) {
-                  const [httpVersion, statusCode, ...statusTextParts] =
-                    line.split(" ");
-                  status = parseInt(statusCode, 10);
-                  statusText = statusTextParts.join(" ");
-                  mode = "HEADER";
-                } else if (line !== "") {
-                  mode = "BODY";
-                  bodyContent += line + "\n";
-                }
-                break;
-
-              case "HEADER":
-                if (line === "") {
-                  mode = "BODY";
-                } else {
-                  const colonIndex = line.indexOf(":");
-                  if (colonIndex > 0) {
-                    const key = line.slice(0, colonIndex).trim();
-                    const value = line.slice(colonIndex + 1).trim();
-                    headers.set(key, value);
-                  }
-                }
-                break;
-
-              case "BODY":
-                bodyContent += line + "\n";
-                break;
-            }
-          }
-
-          buffer = lines[0] || "";
-        };
-
-        while (i < strings.length) {
-          processChunk(strings[i]);
-
-          if (j < substitutions.length) {
-            const sub = substitutions[j];
-            if (typeof sub === "function") {
-              const result = await sub(request, context);
-              if (
-                result instanceof ReadableStream ||
-                result instanceof Blob ||
-                result instanceof ArrayBuffer ||
-                result instanceof Uint8Array
-              ) {
-                // A substitution function can return a stream/binary value
-                // just like a directly-substituted one; it must get the
-                // same raw-passthrough treatment rather than being coerced
-                // via .toString() (which would produce "[object ...]").
-                if (!headers.has("Content-Type")) {
-                  headers.set(
-                    "Content-Type",
-                    result.type ?? "application/octet-stream" // Blob may have a type
-                  );
-                }
-                return result;
-              } else if (result !== undefined && result !== null) {
-                processChunk(result.toString());
-              }
-            } else if (
-              sub instanceof ReadableStream ||
-              sub instanceof Blob ||
-              sub instanceof ArrayBuffer ||
-              sub instanceof Uint8Array
-            ) {
-              if (!headers.has("Content-Type")) {
-                headers.set(
-                  "Content-Type",
-                  sub.type ?? "application/octet-stream" // Blob may have a type
-                );
-              }
-              return sub;
-            } else if (sub instanceof Headers) {
-              for (const [key, value] of sub) {
-                headers.set(key, value);
-              }
-            } else if (sub !== undefined && sub !== null) {
-              processChunk(sub.toString());
-            }
-            j++;
-          }
-
-          i++;
-        }
-
-        // Process any remaining buffer content
-        if (buffer) {
-          processChunk("\n");
-        }
-
-        return bodyContent.trim();
-      };
-
-      let responseBody = await processInput();
-
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "text/html");
+      // Resolve every function-valued substitution up front -- this is
+      // create-route's one feature the shared parser doesn't (and
+      // shouldn't) know about: a substitution can run arbitrary async
+      // work and mutate `context` (headers/status) as a side effect, in
+      // addition to contributing a value to the template. `null`/
+      // `undefined` are preserved (parseHttpText already treats either as
+      // "contributes nothing," matching ordinary JS template semantics).
+      const resolvedSubstitutions = [];
+      for (const sub of substitutions) {
+        resolvedSubstitutions.push(
+          typeof sub === "function" ? await sub(request, context) : sub
+        );
       }
 
-      if (typeof responseBody === "string") {
-        try {
-          JSON.parse(responseBody);
-          if (!headers.has("Content-Type")) {
-            headers.set("Content-Type", "application/json");
-          }
-        } catch {
-          // Not JSON, keep existing Content-Type
+      const { startLine, headerEntries, body } = parseHttpText(
+        strings,
+        resolvedSubstitutions,
+        {
+          isStartLine: (line) => line.startsWith("HTTP/"),
+          trimBodyLines: true,
         }
+      );
 
-        if (!headers.has("Content-Length")) {
+      if (startLine !== null) {
+        const [, statusCodeText, ...statusTextParts] = startLine.split(" ");
+        const parsedStatus = parseInt(statusCodeText, 10);
+        if (!Number.isNaN(parsedStatus)) {
+          status = parsedStatus;
+          statusText = statusTextParts.join(" ");
+        }
+      }
+
+      mergeHeaderEntries(headers, headerEntries);
+
+      let responseBody = body;
+      const isBinaryBody = typeof responseBody !== "string";
+
+      if (isBinaryBody) {
+        if (!headers.has("Content-Type")) {
           headers.set(
-            "Content-Length",
-            new Blob([responseBody]).size.toString()
+            "Content-Type",
+            responseBody.type ?? "application/octet-stream" // Blob may have a type
           );
+        }
+      } else {
+        if (!headers.has("Content-Type")) {
+          headers.set("Content-Type", "text/html");
+        }
+        if (!headers.has("Content-Length")) {
+          headers.set("Content-Length", new Blob([responseBody]).size.toString());
         }
       }
 
@@ -173,11 +110,11 @@ export const createRoute = (initOrMiddleware) => {
           },
         });
       }
+
       return new Response(
         status === 204 && !responseBody ? null : responseBody, // If status is 204, body must be null
         { headers, status, statusText }
       );
-      // return new Response(responseBody, { headers, status, statusText });
     };
   };
 };
