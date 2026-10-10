@@ -117,7 +117,7 @@ already behaved) is the one `create-route.mjs` was always meant to have.
   carried over during the leroute -> `@johnhenry/letterpress` rename --
   it simply wasn't in the initial `@johnhenry/letterpress` source, a gap
   in that migration rather than an intentional removal. It was discovered
-  while porting a downstream consumer, `prism` (a live HTTP request
+  while porting a private downstream consumer (a live HTTP request
   inspector/proxy), whose proxy mode depends on it for rewriting proxied
   requests/responses. Ported unchanged in behavior as `rewrite.mjs`
   (`createRewriter`, plus `rewriteRequest`/`rewriteResponse`/`addRule`/
@@ -133,7 +133,7 @@ already behaved) is the one `create-route.mjs` was always meant to have.
 
 - ✨ **`router.mount(prefix, subHandler)`**: another `leroute` capability
   (`create-lerouter.mjs`'s `router.mount`) dropped during the same rename,
-  found via the same `prism` port -- prism's own top-level router uses it
+  found via the same port -- that app's own top-level router uses it
   to mount its dashboard sub-router under `/inspect`. Delegates every
   request under `prefix` to `subHandler` with the prefix stripped from the
   forwarded request's path; `subHandler` may be a plain `(Request) =>
@@ -155,9 +155,9 @@ already behaved) is the one `create-route.mjs` was always meant to have.
   and forwarded to `defaultHandler` too. This was also present in `leroute`
   (`router(request, ctx = {})`) and dropped during the rename; brought back
   specifically so `mount()` can hand a mounted sub-router its `mountPrefix`
-  (used by `prism` to reconstruct the full request path for display in its
+  (used by that app to reconstruct the full request path for display in its
   captured-request feed, purely cosmetic but a real fidelity gap otherwise)
-  -- caught by testing `mount()` end-to-end against `prism` itself, not by
+  -- caught by testing `mount()` end-to-end against that app itself, not by
   a direct comparison against the old source this time. Existing single-arg
   `router(request)` callers are unaffected (`ctx` defaults to `{}`).
 

@@ -8,7 +8,7 @@
  * see the README's provenance note) as `createRewriter`, but was dropped
  * during the leroute -> @johnhenry/letterpress rename. It's ported here
  * unchanged in behavior, discovered missing while porting a downstream
- * consumer (`prism`, a request inspector/proxy) that relies on it for
+ * consumer (a private request inspector/proxy) that relies on it for
  * proxy-mode rewriting.
  *
  * Rules format:
