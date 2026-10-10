@@ -265,7 +265,7 @@ rewriter.addRule({ match: { path: "/teapot" }, action: { setStatus: 418 } });
 > This existed in `leroute` (the package letterpress was renamed from --
 > see the provenance note near the top of this README) but was dropped
 > during that rename. It's ported here, discovered missing while porting a
-> downstream consumer (`prism`, a request inspector/proxy) that relies on
+> downstream consumer (a private request inspector/proxy) that relies on
 > it for proxy-mode rewriting -- see CHANGELOG.md.
 
 ### `deconstruct`, `cook`
@@ -318,13 +318,6 @@ is designed to pair with a sibling package that does.
   `Route`-shaped function works too; `leserve` is the tested, documented
   pairing, not a hard dependency (it's a `devDependency` here, used only in
   the demo scripts).
-- **[`@johnhenry/prism`](https://github.com/johnhenry/prism)** -- a live
-  HTTP request inspector/proxy that uses `createRouter()` as its top-level
-  router. Porting it surfaced two real gaps left over from letterpress's
-  own rename from `leroute`: `router.mount()` (with the `ctx`-forwarding
-  its `mountPrefix` depends on) and `createRewriter`
-  (`@johnhenry/letterpress/rewrite`) -- both closed as part of that port,
-  see CHANGELOG.md.
 
 ## 🤝 Contributing
 
