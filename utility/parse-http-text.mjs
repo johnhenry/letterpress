@@ -142,6 +142,7 @@ export const parseHttpText = async (strings, substitutions, options = {}) => {
       if (p > 0) {
         if (zone === "body") {
           commitBodyLine(lineBuffer, false);
+          lineBuffer = "";
         } else {
           flushLine();
         }
