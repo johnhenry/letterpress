@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { tagRequest, tagResponse } from "../index.mjs";
+import { tagRequest, tagResponse, createResponse } from "../index.mjs";
 
 const createReadableStream = (data) =>
   new ReadableStream({
@@ -249,5 +249,36 @@ ${new Blob(["hello blob"], { type: "text/plain" })}`;
 
 hello`;
     assert.equal(auto.headers.get("content-length"), "5");
+  });
+});
+
+test("multi-line bodies are not duplicated (issue #20)", async (t) => {
+  await t.test("tagResponse", async () => {
+    const response = await tagResponse`HTTP/1.1 200 OK
+
+a
+b
+c`;
+    assert.equal(await response.text(), "a\nb\nc");
+  });
+
+  await t.test("tagRequest", async () => {
+    const request = await tagRequest()`POST /x HTTP/1.1
+
+a
+b
+c`;
+    assert.equal(await request.text(), "a\nb\nc");
+  });
+
+  await t.test("createResponse with substitution in a later line", async () => {
+    const name = "x";
+    const response = await createResponse`HTTP/1.1 200 OK
+Content-Type: text/plain
+
+line1
+line2 ${name}
+line3`;
+    assert.equal(await response.text(), "line1\nline2 x\nline3");
   });
 });

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 This project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reaches 1.0.0.
 
+## [0.2.2] - 2026-10-14
+
+### Fixed
+
+- 🐛 **Multi-line bodies duplicated earlier lines** (#20). In
+  `utility/parse-http-text.mjs`, the line buffer was not cleared after each
+  committed body line, so a body of `a\nb\nc` came out as `a\nab\nabc`.
+  This affected `createResponse`/`createRoute`/`tagRequest`/`tagResponse`
+  (a regression since `0.2.0`; `0.0.3` was correct).
+
 ## [0.2.1] - 2026-10-01
 
 ### Fixed
